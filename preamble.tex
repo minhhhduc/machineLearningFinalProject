@@ -1,0 +1,78 @@
+% LaTeX full code with corrected margins for title page and document
+\NeedsTeXFormat{LaTeX2e}
+\documentclass[a4paper, oneside]{report}
+
+% ---------- Ngôn ngữ & mã hóa ----------
+\usepackage[utf8]{vietnam}
+% ---------- Định dạng trang ----------
+\usepackage{geometry}
+\usepackage{indentfirst}
+\usepackage[strings]{underscore}
+% Lề chuẩn luận văn: Trái 35mm, Phải 25mm, Trên 30mm, Dưới 30mm
+\geometry{
+    a4paper,
+    left=35mm,
+    right=25mm,
+    top=30mm,
+    bottom=30mm
+}
+
+% ---------- Cỡ chữ & giãn dòng ----------
+\usepackage{setspace}
+\onehalfspacing
+
+% Ép toàn văn bản về 14pt
+\makeatletter
+\renewcommand\normalsize{%
+   \@setfontsize\normalsize{14pt}{18pt}%
+}
+\normalsize
+\makeatother
+
+% ---------- Toán học ----------
+\usepackage{amsmath, amssymb, amsthm}
+
+% ---------- Hình ảnh & bảng ----------
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
+
+% ---------- Hyperlinks ----------
+\usepackage[hidelinks]{hyperref}
+
+% ---------- Header & Footer ----------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyfoot[C]{\thepage}
+
+% ---------- Heading styles ----------
+\usepackage{titlesec}
+
+\titleformat{\chapter}[block]
+{\bfseries\centering\fontsize{18pt}{22pt}\selectfont}
+{Chương \thechapter.}{1em}{}
+
+\titlespacing*{\chapter}{0pt}{0pt}{1em}
+
+\titleformat{\section}[block]
+{\bfseries\fontsize{16pt}{20pt}\selectfont}
+{\thesection}{1em}{}
+
+\titleformat{\subsection}[block]
+{\bfseries\fontsize{15pt}{18pt}\selectfont}
+{\thesubsection}{1em}{}
+
+% ---------- Tài liệu tham khảo ----------
+\usepackage[backend=biber]{biblatex}
+\addbibresource{thesis.bib}
+
+% ---------- Trang bìa ----------
+\usepackage{fancybox}
+
+% ---------- Căn khung giữa trang ----------
+\usepackage{changepage}

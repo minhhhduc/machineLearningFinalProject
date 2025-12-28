@@ -1,0 +1,100 @@
+\chapter{Phương pháp giải quyết}
+\section{Tiền xử lí dữ liệu}
+
+\subparagraph{Làm sạch câu:}
+Quá trình tiền xử lí dữ liệu trong mô hình gán nhãn từ loại (POS Tagging) được thực hiện nhằm chuẩn hóa và loại bỏ nhiễu trong tập dữ liệu gốc. Cụ thể, dữ liệu huấn luyện và kiểm thử ban đầu được lấy từ các tệp văn bản \texttt{.txt}, trong đó mỗi câu được biểu diễn bởi các cặp \texttt{từ/nhãn}. Tuy nhiên, do sai lệch định dạng trong quá trình thu thập, một số token có thể chứa lỗi ký tự hoặc bị gộp sai.  
+
+Các hàm xử lý được xây dựng để giải quyết các vấn đề này, bao gồm:
+\begin{itemize}
+    \item Chuẩn hóa ký tự phân tách \texttt{/} giữa từ và nhãn, loại bỏ các ký tự thừa hoặc lỗi định dạng.
+    \item Phát hiện và tách các token bị dính, ví dụ \texttt{-/-3/V} được tách thành các thành phần hợp lệ.
+    \item Loại bỏ các token rỗng, ký tự đặc biệt và dòng trống.
+\end{itemize}
+Kết quả thu được là các câu sạch, trong đó mỗi từ có dạng chuẩn \texttt{"từ/nhãn"}, sẵn sàng cho bước xử lí tiếp theo.
+
+\subparagraph{Tách từ và nhãn:}
+Sau khi hoàn tất quá trình làm sạch, mỗi token được tách thành hai thành phần riêng biệt: từ (token) và nhãn từ loại (POS tag) (Các token dạng từ ghép có các từ được nối với nhau bởi dấu "\_" sẽ được thay thế bằng khoảng trắng). Cụ thể, mô hình xử lí các cặp \texttt{"từ/nhãn"} để tạo thành hai danh sách song song \texttt{tokens} và \texttt{tags}, đảm bảo tính tương ứng 1–1 giữa từ và nhãn.  
+\newpage
+Ví dụ:
+\[
+\text{Câu gốc: } \texttt{Tôi/P ăn/V cơm\_sườn/N ./PUNCT}
+\]
+\[
+\Rightarrow
+\begin{cases}
+\text{tokens: ["Tôi", "ăn", "cơm sườn", "."]} \\
+\text{tags: ["P", "V", "N", "PUNCT"]}
+\end{cases}
+\]
+
+Dữ liệu sau khi tách được lưu trữ dưới định dạng \texttt{JSONL}, trong đó mỗi dòng biểu diễn một câu bởi danh sách các từ và nhãn tương ứng. Tập dữ liệu này được sử dụng làm đầu vào cho giai đoạn mã hóa bằng PhoBERT và huấn luyện mô hình gán nhãn từ loại.
+
+\section{Trích xuất đặc trưng (PhoBERT)}
+
+Sau khi dữ liệu được tiền xử lí và tách thành hai danh sách song song gồm các từ (\texttt{tokens}) và nhãn từ loại (\texttt{tags}), bước tiếp theo là mã hoá các câu bằng mô hình PhoBERT để trích xuất đặc trưng ngữ nghĩa phục vụ huấn luyện.  
+
+\subparagraph{Mã hoá dữ liệu đầu vào:}
+Mô hình PhoBERT được nạp thông qua thư viện \texttt{transformers} của HuggingFace, với thành phần \texttt{AutoTokenizer} dùng để mã hoá câu thành các chỉ số số học (\texttt{input\_ids}) tương ứng với các token. Do PhoBERT sử dụng cơ chế mã hoá \textit{SentencePiece}, mỗi từ có thể được chia thành nhiều \textit{subword}; do đó, quá trình mã hoá phải duy trì ánh xạ giữa các subword và nhãn từ loại gốc.  
+
+\subparagraph{Trích xuất đặc trưng ngữ nghĩa:}
+PhoBERT được sử dụng như một bộ trích xuất đặc trưng ngữ nghĩa thông qua lớp \texttt{AutoModel}. Khi một câu được đưa vào mô hình, đầu ra của PhoBERT là các vector đặc trưng có kích thước 768 cho mỗi token, thể hiện ngữ cảnh của từ trong câu. Các vector này được tổng hợp (lấy trung bình) cho các subword tương ứng với một từ gốc để tạo ra một vector đặc trưng duy nhất cho mỗi từ. Toàn bộ tập dữ liệu được chuyển đổi thành một ma trận đặc trưng \texttt{X} và một danh sách nhãn \texttt{y}.
+
+% \section{Giảm chiều dữ liệu}
+% -PCA -> 256 , 64 để train mô hình
+% PCA, LDA -> 6 để phân tích tương quan và mối liên hệ
+
+
+\section{Xây dựng và huấn luyện các mô hình}
+Dữ liệu đặc trưng sau khi trích xuất từ PhoBERT được chia thành tập huấn luyện và tập kiểm thử theo các tỉ lệ khác nhau (80/20, 70/30, 60/40) để đánh giá sự ảnh hưởng của kích thước dữ liệu đến hiệu suất mô hình. Thí nghiệm được thực hiện trên cả dữ liệu gốc (768 chiều)
+% và dữ liệu đã giảm chiều bằng PCA (xuống 256 và 64 chiều).
+
+\subsection{Naive Bayes (NB)}
+Do dữ liệu đặc trưng từ PhoBERT là các giá trị liên tục, mô hình \texttt{GaussianNB} từ thư viện Scikit-learn được lựa chọn. Mô hình này giả định rằng các đặc trưng tuân theo phân phối chuẩn (Gaussian). Quá trình huấn luyện bao gồm việc tính toán giá trị trung bình và phương sai của các đặc trưng cho mỗi lớp (nhãn POS) trên tập huấn luyện. Sau đó, mô hình dự đoán nhãn cho dữ liệu mới dựa trên định lý Bayes.
+
+\subsection{Softmax Regression (SR)}
+Mô hình Softmax Regression (hay Logistic Regression đa lớp) được triển khai bằng \texttt{SGDClassifier} của Scikit-learn với tham số \texttt{loss="log\_loss"}. Mô hình này học một tập hợp các trọng số để ánh xạ trực tiếp từ vector đặc trưng đầu vào đến xác suất của mỗi lớp nhãn. Quá trình huấn luyện sử dụng thuật toán tối ưu hóa Stochastic Gradient Descent (SGD) để giảm thiểu hàm mất mát cross-entropy.
+
+
+% \subsection{Multi-Layer Perceptron (MLP)}
+% Một mô hình mạng nơ-ron nhân tạo đa lớp (MLP) được xây dựng bằng PyTorch.
+% \begin{itemize}
+%     \item \textbf{Kiến trúc}: Mô hình bao gồm một lớp đầu vào, hai lớp ẩn và một lớp đầu ra. Cụ thể: Lớp ẩn thứ nhất có 256 nơ-ron, theo sau là hàm kích hoạt ReLU và một lớp Dropout (tỉ lệ 0.2) để chống quá khớp. Lớp ẩn thứ hai có 128 nơ-ron, cũng với ReLU và Dropout. Lớp đầu ra có số nơ-ron bằng số lượng nhãn POS.
+%     \item \textbf{Huấn luyện}: Mô hình được huấn luyện trong 30 epoch bằng thuật toán tối ưu \texttt{Adam} với tốc độ học \texttt{1e-5} và hàm mất mát là \texttt{CrossEntropyLoss}. Sau mỗi epoch, mô hình được đánh giá trên tập kiểm thử. Phiên bản mô hình có độ chính xác cao nhất trên tập kiểm thử sẽ được lưu lại để đánh giá cuối cùng.
+% \end{itemize}
+
+\subsection{Multi-Layer Perceptron (MLP)}
+Một mô hình Mạng Nơ-ron Đa lớp (MLP) được xây dựng bằng thư viện \texttt{PyTorch} để học các mối quan hệ phi tuyến phức tạp từ 768 chiều đặc trưng của PhoBERT.
+
+\subparagraph{Kiến trúc mô hình:}
+Kiến trúc được định nghĩa trong lớp \texttt{MLP} (Kế thừa từ \texttt{nn.Module}), bao gồm một lớp đầu vào, hai lớp ẩn và một lớp đầu ra, được gói trong một \texttt{nn.Sequential}. Cụ thể:
+\begin{itemize}
+    \item \textbf{Lớp ẩn 1:} Một lớp \texttt{nn.Linear} ánh xạ từ \texttt{input\_dim} (ví dụ: 768) đến 256 nơ-ron, theo sau là hàm kích hoạt ReLU và một lớp Dropout (tỉ lệ 0.2) để chống quá khớp (overfitting).
+    \item \textbf{Lớp ẩn 2:} Một lớp \texttt{nn.Linear} ánh xạ từ 256 nơ-ron xuống 128 nơ-ron, cũng sử dụng ReLU và Dropout (tỉ lệ 0.2).
+    \item \textbf{Lớp đầu ra:} Một lớp \texttt{nn.Linear} tuyến tính cuối cùng ánh xạ 128 nơ-ron đến \texttt{num\_classes} (số lượng nhãn POS). Đầu ra của lớp này là các giá trị \textit{logits} thô.
+\end{itemize}
+
+\paragraph{Quá trình huấn luyện:}
+\begin{itemize}
+    \item \textbf{Chuẩn bị dữ liệu:} Các nhãn dạng chuỗi (string) được mã hóa thành số nguyên (integer) bằng \texttt{LabelEncoder}. Dữ liệu NumPy được chuyển đổi sang \texttt{torch.Tensor} và tải vào \texttt{DataLoader} với kích thước \textit{lô} (batch) được xác định trước.
+    \item \begin{sloppypar} \textbf{Tối ưu hóa:} Mô hình được huấn luyện bằng thuật toán tối ưu \textbf{Adam} (\texttt{optim.Adam}) với một tốc độ học (learning rate) định trước. Hàm mất mát được sử dụng là Cross-Entropy Loss (\texttt{nn.CrossEntropyLoss}), phù hợp cho bài toán phân loại đa lớp vì nó đã bao gồm cả bước tính Softmax trên logits đầu ra.\end{sloppypar}
+\end{itemize}
+
+\section{So sánh và đánh giá kết quả}
+Hiệu suất của các mô hình được đánh giá trên tập kiểm thử thông qua các chỉ số phổ biến trong bài toán phân loại đa lớp. Với mỗi mô hình so sánh độ chính xác khi huấn luyện với cách chia bộ dữ liệu khác nhau. Với mỗi cách chia so sánh độ chính xác giữa các mô hình.
+
+Độ xác chính xác:
+\begin{itemize}
+    \item \textbf{Accuracy}: Tỉ lệ số lượng điểm dữ liệu được dự đoán đúng trên tổng số điểm dữ liệu.
+    \item \textbf{Precision}: Độ chính xác, đo lường tỉ lệ dự đoán đúng của một lớp trên tổng số các dự đoán cho lớp đó.
+    \item \textbf{Recall}: Độ phủ, đo lường tỉ lệ dự đoán đúng của một lớp trên tổng số các mẫu thực tế của lớp đó.
+    \item \textbf{F1-score}: Trung bình điều hòa của Precision và Recall, cung cấp một thước đo cân bằng giữa hai chỉ số này.
+\end{itemize}
+Các chỉ số này được tính toán cho từng lớp và tính trung bình (macro avg, weighted avg) để có cái nhìn tổng quan về hiệu suất mô hình. Ngoài ra, ma trận nhầm lẫn (confusion matrix) cũng được sử dụng để trực quan hóa các lỗi dự đoán giữa các lớp.
+
+Việc so sánh được thực hiện theo hai khía cạnh chính:
+\begin{enumerate}
+    \item \textbf{So sánh giữa các mô hình}: Đánh giá hiệu suất của Naive Bayes, Softmax Regression và MLP trong cùng một điều kiện (cùng tỉ lệ chia và cùng chiều dữ liệu).
+    \item \textbf{So sánh ảnh hưởng của giảm chiều}: Đánh giá hiệu suất của mỗi mô hình trên các bộ dữ liệu có số chiều khác nhau (768, 256, và 64) để xem xét sự đánh đổi giữa hiệu suất và chi phí tính toán.
+\end{enumerate}
+
+\subparagraph{Mục tiêu của việc so sánh:} xác định mức độ phù hợp của mô hình để giải quyết bài toán gán nhãn từ loại. 

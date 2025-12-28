@@ -1,0 +1,36 @@
+\chapter{Tổng kết}
+\section{Kết quả đạt được}
+Trong quá trình nghiên cứu và thực nghiệm, nhóm đã đạt được các kết quả chính sau:
+\begin{itemize}
+    \item \textbf{Tiền xử lý dữ liệu:} Dữ liệu gồm 9.511 câu, với tổng cộng hơn 200.000 token. Các bước làm sạch và chuẩn hóa được thực hiện nhằm đảm bảo tính nhất quán về định dạng và nhãn.
+    \item \textbf{Trích rút đặc trưng:} Dữ liệu được mã hóa và trích đặc trưng bằng mô hình PhoBERT-base (VinAI). Ngoài ra, các kỹ thuật giảm chiều PCA và LDA cũng được áp dụng để đánh giá ảnh hưởng đến hiệu năng mô hình.
+    \item \textbf{Phân tích dữ liệu:} Phân bố nhãn không đồng đều, trong đó các nhãn phổ biến nhất là \textit{N} (23,7\%), \textit{V} (19,6\%) và \textit{PUNCT} (14,8\%). Độ dài trung bình của câu là khoảng 23 từ.
+    \item \textbf{Kết quả mô hình:} Các thí nghiệm đã chỉ ra sự khác biệt rõ rệt và các phát hiện quan trọng:
+    \begin{itemize}
+        \item \textbf{Hiệu suất cao nhất:} Mô hình Multi-Layer Perceptron trên 768 chiều (gốc) đạt hiệu suất tổng thể cao nhất (Accuracy 0.92, F1-Weighted 0.92 ở tỉ lệ 80/20). Mô hình Softmax Regression theo sát với Accuracy 0.91.
+        
+        \item \textbf{Ảnh hưởng nghịch lý của PCA:} Giảm chiều dữ liệu bằng PCA có tác động trái ngược nhau. Nó \textit{cải thiện đáng kể} hiệu suất của Naive Bayes (Accuracy tăng từ 0.68 lên 0.81 tại 256D), nhưng lại \textit{làm suy giảm} hiệu suất của cả Softmax Regression và Multi-Layer Perceptron.
+        
+        \item \textbf{Xử lý mất cân bằng:} Mặc dù Multi-Layer Perceptron có Accuracy tổng thể cao nhất, mô hình Softmax Regression (768D) lại là mô hình cân bằng nhất, đạt F1-Macro 0.77 (so với 0.68 của Multi-Layer Perception). Phân tích chi tiết (Bảng \ref{tab:f1_per_label_alphabetical}) cho thấy Multi-Layer Perceptron không hiệu quả (F1=0.00) trên các lớp hiếm (B, I, Y), trong khi Softmax Regression vẫn duy trì khả năng nhận diện tốt (ví dụ: F1=0.60 trên lớp 'B', F1=0.71 trên lớp 'S').
+    \end{itemize}
+    
+    \item \textbf{Đánh giá tổng quát:} Các kết quả khẳng định đặc trưng trích xuất từ PhoBERT (768D) là đầu vào chất lượng rất cao (cho phép Softmax Regression và Multi-Layer Perceptron đạt Accuracy >91\%). Tuy nhiên, nghiên cứu chỉ ra sự đánh đổi (trade-off) quan trọng:
+    \begin{itemize}
+        \item \textbf{Đánh đổi 1 (Mô hình vs Đặc trưng):} Các mô hình phức tạp (Multi-Layer Perceptron, Softmax Regression) hoạt động tốt nhất trên đặc trưng gốc 768 chiều. Mô hình xác suất đơn giản (Naive Bayes) yêu cầu giảm chiều (PCA) để hoạt động hiệu quả (Accuracy 0.81 tại 256 chiều).
+        \item \textbf{Đánh đổi 2 (Accuracy vs Cân bằng):} Mô hình Multi-Layer Perceptron tối ưu hóa tốt hơn cho Accuracy tổng thể (0.92), nhưng bằng cách "bỏ qua" các lớp thiểu số. Mô hình Softmax Regression cho thấy khả năng tổng quát hóa cân bằng và đáng tin cậy hơn (F1-Macro 0.77) khi xử lý dữ liệu mất cân bằng.
+    \end{itemize}
+\end{itemize}
+
+\section{Hạn chế và hướng phát triển}
+\begin{itemize}
+    \item Chưa tiến hành đánh giá trên nhiều mô hình ngôn ngữ khác như \textit{viBERT}, \textit{XLM-R} hay các biến thể nhẹ hơn của PhoBERT.
+    \item Việc giảm chiều dữ liệu chưa kết hợp với kỹ thuật chọn đặc trưng tối ưu hoặc điều chỉnh siêu tham số tự động.
+    \item Chưa thử nghiệm trên tập dữ liệu cực lớn hoặc đa miền để đánh giá khả năng tổng quát hoá.
+\end{itemize}
+
+\section{Kết luận}
+Kết quả thực nghiệm cho thấy việc áp dụng PhoBERT trong bài toán gán nhãn từ loại tiếng Việt đạt hiệu năng rất cao, với độ chính xác tổng thể vượt 91\% (với Multi-Layer Perceptron và Softmax Regression). 
+
+Báo cáo đã chỉ ra một phát hiện quan trọng: việc giảm chiều (PCA) là \textit{có hại} cho các mô hình phức tạp như Multi-Layer Perceptron và Softmax Regression (vốn hoạt động tốt nhất ở 768D) nhưng lại \textit{thiết yếu} cho mô hình Naive Bayes (tăng Accuracy từ 0.68 lên 0.81).
+
+Quan trọng hơn, báo cáo nhấn mạnh sự đánh đổi rõ rệt giữa Accuracy tổng thể và khả năng xử lý các lớp hiếm. Mặc dù MLP đạt Accuracy cao nhất (0.92), nó hoàn toàn thất bại trong việc nhận diện nhiều lớp thiểu số (F1=0.00). Ngược lại, Softmax Regression, dù Accuracy thấp hơn một chút (0.91), lại là mô hình cân bằng và đáng tin cậy hơn (F1-Macro 0.77), với khả năng nhận diện các lớp hiếm tốt hơn đáng kể. Điều này gợi ý rằng, đối với các bài toán mất cân bằng trong thực tế, Softmax Regression có thể là lựa chọn tổng quát hóa tốt hơn.

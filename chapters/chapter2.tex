@@ -1,0 +1,507 @@
+\chapter{Cơ sở lý thuyết}
+\section{POS Tagging}
+\subparagraph{Định nghĩa:} Gán nhãn từ loại, hay còn gọi là Part-of-Speech Tagging (POS Tagging), là một trong những bước quan trọng và cơ bản nhất trong lĩnh vực xử lý ngôn ngữ tự nhiên (Natural Language Processing – NLP). Nhiệm vụ của POS Tagging là xác định loại ngữ pháp của từng từ trong câu, chẳng hạn như danh từ, động từ, tính từ, trạng từ, đại từ, giới từ, liên từ hay các loại từ khác. Việc xác định đúng loại từ của từng từ trong câu giúp máy tính hiểu rõ hơn về vai trò ngữ pháp và quan hệ cú pháp giữa các thành phần trong câu, từ đó phục vụ cho nhiều ứng dụng cao cấp hơn trong xử lý ngôn ngữ. (Natural Language Processing – NLP).~\cite{definition_pos_tagging}
+
+\subparagraph{Ví dụ:} trong câu “Tôi đang học xử lý ngôn ngữ tự nhiên”, hệ thống gán nhãn từ loại sẽ gắn cho từng từ một nhãn tương ứng như: “Tôi/P” (đại từ), “đang/R” (trạng từ), “học/V” (động từ), “xử lý/V” (động từ), “ngôn ngữ/N” (danh từ), “tự nhiên/A” (tính từ). Việc có được chuỗi nhãn như vậy giúp máy tính hiểu rằng “học” là hành động chính, “đang” là trạng thái thời gian, “ngôn ngữ tự nhiên” là đối tượng của hành động, và “tôi” là chủ thể thực hiện. Những thông tin này đóng vai trò nền tảng cho các hệ thống hiểu ngôn ngữ, dịch máy hay tóm tắt văn bản.
+
+\subparagraph{Ứng dụng:} Gán nhãn từ loại là một trong những bước tiền xử lý bắt buộc trong hầu hết các hệ thống NLP hiện đại. Nó cung cấp đầu vào có cấu trúc cho các tác vụ phức tạp hơn như phân tích cú pháp (syntactic parsing)~\cite{pos_tagging_syntactic_parsing}, nhận dạng thực thể có tên (Named Entity Recognition – NER)~\cite{pos_tagging_in_NER}, phân tích cảm xúc (sentiment analysis), dịch máy (machine translation)~\cite{pos_tagging_in_machine_translation}, hoặc hỏi – đáp tự động (question answering)~\cite{pos_tagging_in_QA}. Chẳng hạn, trong dịch máy, việc xác định chính xác danh từ, động từ hay tính từ giúp hệ thống chọn từ tương ứng trong ngôn ngữ đích phù hợp hơn về ngữ pháp. Trong phân tích cú pháp, nhãn từ loại được sử dụng để xác định cấu trúc cây cú pháp của câu, từ đó hỗ trợ việc hiểu ngữ nghĩa chính xác hơn.
+
+% \section{Các loại từ trong tiếng Việt}
+\section{Phương pháp trích xuất đặc trưng bằng PhoBERT}
+
+PhoBERT~\cite{PhoBERT_doc} là mô hình ngôn ngữ lớn cho tiếng Việt được tiền huấn luyện dựa trên kiến trúc RoBERTa (Dạng mã hóa - Encoder), sử dụng khối lượng lớn dữ liệu văn bản tiếng Việt thu thập từ Wikipedia và các nguồn báo chí. Mô hình này được thiết kế nhằm học biểu diễn ngữ cảnh giàu thông tin cho từng từ trong câu, giúp nắm bắt hiệu quả các đặc trưng ngữ nghĩa và cú pháp đặc trưng của tiếng Việt. PhoBERT đã chứng minh hiệu quả vượt trội trong nhiều tác vụ xử lý ngôn ngữ tự nhiên (NLP) như phân loại văn bản, gán nhãn chuỗi, và phân tích cảm xúc.
+
+Trích xuất đặc trưng bằng PhoBERT là kỹ thuật sử dụng mô hình ngôn ngữ đã được tiền huấn luyện (pre-trained language model) này như một bộ mã hóa (encoder) cố định.
+
+Trong quá trình này, các trọng số của PhoBERT không được cập nhật; thay vào đó, chỉ thực hiện một lượt truyền thẳng (forward pass\cite{forward_pass}) để chuyển đổi văn bản đầu vào thành các vector biểu diễn ngữ cảnh (contextualized embeddings\cite{embedding, contextual}). Các vector này - thường được trích xuất từ lớp ẩn cuối cùng (last hidden state) - đã mã hóa đồng thời thông tin ngữ nghĩa và cú pháp của văn bản, và được sử dụng làm đầu vào cho các mô hình học máy truyền thống hoặc các mạng nơ-ron nhỏ hơn.
+
+Tùy thuộc vào loại bài toán, có hai hướng trích xuất đặc trưng phổ biến:
+
+\begin{itemize}
+    \item \textbf{Đặc trưng cấp độ câu (Sentence-level features):}  
+    Hướng tiếp cận này tạo ra một vector duy nhất đại diện cho toàn bộ câu, thường được dùng trong các bài toán như phân loại văn bản. Hai phương pháp phổ biến gồm:
+    \begin{enumerate}
+        \item \textbf{Sử dụng token đặc biệt\cite{cls_vector}:} Lấy vector đầu ra của token \texttt{[CLS]} (hoặc token tương đương trong PhoBERT), vốn được huấn luyện để tổng hợp thông tin của toàn câu.
+        \item \textbf{Sử dụng kỹ thuật Pooling\cite{pooling}:} Áp dụng các phép tổng hợp (chẳng hạn như trung bình hoặc cực đại) trên toàn bộ các vector token trong câu để tạo ra một vector biểu diễn duy nhất.
+    \end{enumerate}
+
+    \item \textbf{Đặc trưng cấp độ token (Token-level features)\cite{token_level}:}  
+    Hướng tiếp cận này trích xuất vector biểu diễn cho từng token riêng lẻ trong chuỗi đầu ra, phù hợp với các bài toán gán nhãn chuỗi (sequence labeling) như Nhận dạng thực thể có tên (Named Entity Recognition — NER), nơi mỗi token cần được dự đoán nhãn riêng biệt.
+\end{itemize}
+
+% \newpage
+% \section{Giảm chiều dữ liệu}
+% \subsection{PCA}
+% \subsection{LDA}
+
+\newpage
+\section{Các mô hình}
+Sau khi trích xuất đặc trưng từ văn bản bằng mô hình PhoBERT, các vector biểu diễn thu được sẽ được sử dụng làm đầu vào cho các mô hình học máy khác nhau nhằm thực hiện nhiệm vụ phân loại. Trong bài tiểu luận này, ba mô hình được lựa chọn bao gồm: Naive Bayes, Softmax Regression, Multi-Layer Perceptron. Mỗi mô hình có những đặc điểm riêng trong cách học và biểu diễn ranh giới phân lớp, được trình bày chi tiết dưới đây.
+
+\subsection{Naive Bayes}
+
+Phương pháp Naive Bayes là một mô hình xác suất thuộc nhóm mô hình tạo sinh (generative model).  
+Với tập dữ liệu đầu vào $\{(x_n, y_n)\}_{n=1}^N$, trong đó $x_n$ là vector đặc trưng và $y_n \in \{1, 2, \ldots, C\}$ là nhãn lớp tương ứng, ta có xác suất để mẫu $x_n$ thuộc lớp $k$ là:
+
+\[
+P(k \mid x_n) = \frac{P(x_n \mid k) P(k)}{P(x_n)} \propto P(x_n \mid k) P(k)
+\]
+
+Trong đó:
+\begin{itemize}
+    \item $P(k) = \dfrac{|\{y_m = k\}|}{N}$ là xác suất tiên nghiệm (prior) của lớp $k$;
+    \item $P(x_n \mid k) = \dfrac{|\{y_m = k : x_m = x_n\}|}{|\{y_m = k\}|}$ là xác suất có điều kiện.
+\end{itemize}
+
+Kết quả dự đoán của mô hình là:
+\[
+\hat{y}_n = \arg\max_{k \in \{1, 2, \ldots, C\}} P(x_n \mid k) P(k)
+\]
+
+Mô hình Naive Bayes được chia thành ba loại phổ biến:
+\begin{enumerate}
+    \item Multinomial Naive Bayes
+    \item Bernoulli Naive Bayes
+    \item Gaussian Naive Bayes
+\end{enumerate}
+
+\subsubsection{Multinomial Naive Bayes}
+
+Mô hình này được sử dụng cho loại dữ liệu đầu vào rời rạc (ví dụ: tần suất từ trong văn bản).  
+Giả sử đầu vào $x_n \in \mathbb{R}^d$ và các thành phần trong $x_n$ độc lập với nhau, ta có:
+
+\[
+P(k \mid x_n) \propto P(k) P(x_n \mid k) = P(k) \prod_{i=1}^{d} P(x_{n,i} \mid k)
+\]
+
+Lấy logarit để tránh tràn số trong quá trình tính toán trên máy tính:
+\[
+\log P(k \mid x_n) = \log P(k) + \sum_{i=1}^{d} \log P(x_{n,i} \mid k)
+\]
+
+\subparagraph{Kỹ thuật Laplace smoothing:}
+Trong trường hợp tồn tại đặc trưng mà $P(x_{n,i} \mid k) = 0$ (nghĩa là chưa từng xuất hiện trong lớp $k$), công thức sẽ cho xác suất bằng 0 không thực tế.  
+Do đó, người ta sử dụng hiệu chỉnh \(\alpha > 0\) (thường là \(\alpha = 1\)) để làm trơn:
+
+\[
+P(x_{n,i} \mid k) = \frac{|\{y_m = k : x_{m,i} = x_{n,i}\}| + \alpha}
+{|\{y_m = k\}| + C\alpha}
+\]
+
+Hiệu chỉnh này đảm bảo \(0 < P(k \mid x_n) < 1\) và tổng các xác suất vẫn chuẩn hóa hợp lệ.
+
+\subsubsection{Bernoulli Naive Bayes}
+
+Mô hình này được áp dụng cho bài toán phân loại với dữ liệu nhị phân, tức là \(x_n \in \{0,1\}^d\).  
+Với mỗi đặc trưng \(i\), ta có:
+
+\[
+P(x_{n,i} \mid k) =
+\begin{cases}
+     \dfrac{|\{y_m = k : x_{m,i} = 1\}|}{|\{y_m = k\}|} =: P_{i,k}, & \text{nếu } x_{n,i} = 1, \\
+     \dfrac{|\{y_m = k : x_{m,i} = 0\}|}{|\{y_m = k\}|} = 1 - P_{i,k}, & \text{nếu } x_{n,i} = 0.
+\end{cases}
+\]
+
+\subparagraph{Áp dụng kỹ thuật Laplace smoothing:}
+\[
+P(x_{n,i} \mid k) =
+\begin{cases}
+     \dfrac{|\{y_m = k : x_{m,i} = 1\}| + \alpha}{|\{y_m = k\}| + C\alpha} =: P_{i,k}, & \text{nếu } x_{n,i} = 1, \\
+     \dfrac{|\{y_m = k : x_{m,i} = 0\}| + \alpha}{|\{y_m = k\}| + C\alpha} = 1 - P_{i,k}, & \text{nếu } x_{n,i} = 0.
+\end{cases}
+\]
+
+Tổng quát, công thức có thể viết gọn lại như sau:
+\[
+    P(x_{n,i} \mid k) = P_{i,k}^{x_{n,i}} (1 - P_{i,k})^{1 - x_{n,i}}
+\]
+
+\subsubsection{Gaussian Naive Bayes}
+
+Mô hình này được sử dụng cho bài toán phân loại với dữ liệu đầu vào là các biến liên tục, tức là \(x_n \in \mathbb{R}^d\).
+
+Giả sử rằng với mỗi lớp \(k \in \{1, 2, \ldots, C\}\), các đặc trưng \(x_{n,i}\) tuân theo phân phối chuẩn (Gaussian distribution):
+
+\[
+    x_{n,i} \mid k \sim \mathcal{N}(\mu_{k,i}, \sigma_{k,i}^2)
+\]
+
+Do đó, mật độ xác suất có điều kiện của từng đặc trưng là:
+\[
+    P(x_{n,i} \mid k) = \frac{1}{\sqrt{2\pi\sigma_{k,i}^2}} 
+    \exp\!\left(-\frac{(x_{n,i} - \mu_{k,i})^2}{2\sigma_{k,i}^2}\right)
+\]
+
+Với giả định các đặc trưng độc lập, ta có:
+\[
+    P(x_n \mid k) = \prod_{i=1}^{d} P(x_{n,i} \mid k)
+\]
+
+Theo định lý Bayes:
+\[
+P(k \mid x_n) \propto P(k) \, P(x_n \mid k)
+\]
+
+Và quy tắc phân loại cuối cùng là:
+\[
+    \hat{y}_n = \arg\max_{k} \; P(k) \prod_{i=1}^{d} P(x_{n,i} \mid k)
+\]
+
+
+
+\subsection{Softmax Regression}
+
+Phương pháp hồi quy Softmax được xây dựng dựa trên hồi quy logistic và hàm softmax.  
+
+\subparagraph{Hàm sigmoid:}  
+Hàm sigmoid cho hồi quy logistic nhị phân được định nghĩa như sau:
+\[
+z(x) = \frac{1}{1 + e^{-\theta^T \bar{x}}} = \frac{e^{\theta^T \bar{x}}}{1 + e^{\theta^T \bar{x}}}
+\]
+Trong đó:
+\begin{itemize}
+    \item $\theta = (1, \theta^T)^T$, với $\theta \in \mathbb{R}^d$.
+    \item $\bar{x} = (b, x^T)^T$, với $x \in \mathbb{R}^d$, $b \in \mathbb{R}$ là bias.
+\end{itemize}
+
+\subparagraph{Hàm softmax:}  
+Hàm softmax mở rộng cho phân loại nhiều lớp $C$ lớp:
+\[
+g(x_n, k) = \frac{e^{\theta_k^T \bar{x}_n}}{\sum_{i=1}^C e^{\theta_i^T \bar{x}_n}}
+\]
+Trong đó:
+\begin{itemize}
+    \item $\theta \in \mathbb{R}^{(d+1) \times C}$ là ma trận tham số, với
+    \[
+    \theta = 
+    \begin{bmatrix}
+        \theta_{00} & \theta_{01} & \cdots & \theta_{0C} \\
+        \theta_{11} & \theta_{12} & \cdots & \theta_{1C} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        \theta_{d1} & \theta_{d2} & \cdots & \theta_{dC}
+    \end{bmatrix}
+    \]
+    \item $\bar{x}_n \in \mathbb{R}^{d+1}$ là vector input mở rộng với bias.
+\end{itemize}
+
+Xác suất lớp $k$ với input $x_n$ được tính bởi:
+\[
+P(k \mid x_n) = g(x_n, k)
+\]
+
+\subparagraph{Hàm mất mát (loss function):}  
+Hàm log-likelihood (MLE) cho softmax:
+\[
+l(\theta) = \frac{1}{N} \sum_{n=1}^N \ln P(y_n \mid x_n; \theta) 
+= \frac{1}{N} \sum_{n=1}^N \left[ \theta_{y_n}^T \bar{x}_n - \ln \left( \sum_{j=1}^C e^{\theta_j^T \bar{x}_n} \right) \right]
+\]
+
+Theo phương pháp Maximum Likelihood Estimation (MLE):
+\[
+l(\theta) \rightarrow \max_\theta \quad \Leftrightarrow \quad -l(\theta) \rightarrow \min_\theta
+\]
+
+\subparagraph{Hiệu chỉnh $L_2$ (regularization):}  
+Gọi ma trận tham số
+\[
+\theta \in \mathbb{R}^{(d+1)\times C} =
+\begin{bmatrix}
+\theta_{0,:} \\[4pt]
+W
+\end{bmatrix},
+\]
+trong đó $\theta_{0,:}\in\mathbb{R}^{1\times C}$ là hàng bias và $W\in\mathbb{R}^{d\times C}$ là ma trận trọng số (không bao gồm bias).  
+Khi đó, điều chuẩn L2 chỉ áp lên $W$:
+\[
+J(\theta) = -l(\theta) + \frac{\lambda}{2}\|W\|_F^2
+\]
+thay vì điều chuẩn trên toàn bộ $\theta$.
+
+\subparagraph{Stochastic Gradient Descent:}
+\begin{enumerate}
+    \item Khởi tạo $\theta$
+    \item Xáo trộn ${(x_n, y_n)}_{n=1}^{N}$
+    \item Với mỗi cặp $(\bar x_n,\bar y_n)$ thực hiện cập nhật:
+    $$
+        \theta := \theta - \eta\nabla_\theta J(\theta)
+    $$
+    \item Nếu đạt điều kiện dừng thì dừng lại, không thì quay lại bước 2.
+\end{enumerate}
+
+Trong đó:
+\begin{itemize}
+    \item $\bar x_n = (1, x_n^T)^T\in\mathbb{R}^{d+1}$
+    \item $\bar y_n$ là one-hot encoding của $y_n$
+    \item $\eta$ là hệ số học
+\end{itemize}
+\subparagraph{Gradient hiệu chỉnh:}
+
+Hàm mất mát có điều chuẩn được định nghĩa như sau:
+\[
+\nabla_\theta J(\theta) = \nabla_\theta(-l(\theta) + ||\theta_{1, }||_F)
+\]
+Trong đó:
+\begin{itemize}
+    \item $l(\theta)$ là log-likelihood của mô hình.
+    \item $||\theta_{1, }||_F$ là chuẩn Frobenius của ma trận trọng số (không bao gồm bias).
+    \item Thành phần $-\nabla_\theta l(\theta)$ là đạo hàm của phần likelihood, còn $\nabla_\theta||\theta_{1, }||_F$ là đạo hàm của phần điều chuẩn.
+\end{itemize}
+
+Ta có:
+\[
+\frac{\lambda}{2}\nabla_\theta||\theta_{1,}||_F^2 = \lambda\theta_{1,}
+\]
+Công thức trên xuất phát từ việc đạo hàm của $\frac{1}{2}\|\theta\|_F^2$ theo $\theta$ chính là $\theta$.  
+Hệ số $\lambda$ là hệ số điều chuẩn (regularization parameter), kiểm soát độ phạt lên trọng số lớn.
+
+Xét phần đạo hàm của hàm mất mát log-likelihood:
+\[
+    -\nabla_\theta l(\theta) = -\frac{1}{N}\nabla_\theta\left(\sum_{n=1}^N\theta_{y_n}^T\bar x_n\right) + \frac{1}{N}\nabla_\theta\left[ \ln\left(\sum_{c=1}^C e^{\theta_{y_n}^T\bar x_n}\right)\right]
+\]
+Trong đó:
+\begin{itemize}
+    \item Thành phần $\theta_{y_n}^T\bar x_n$ biểu diễn điểm số (score) cho lớp đúng $y_n$.
+    \item Thành phần $\ln\left(\sum_{c=1}^C e^{\theta_c^T\bar x_n}\right)$ tương ứng với chuẩn hóa softmax.
+\end{itemize}
+
+Đạo hàm của từng phần tử theo phần tử $\theta_{k,j}$ được tính như sau:
+\[
+    \frac{\partial(\theta_{y_n}^T\bar x_n)}{\partial\theta_{k,j}^T} = \bar y_k \bar x_n
+\]
+Trong đó $\bar y_k$ là vector one-hot, có giá trị $1$ nếu $k=y_n$, ngược lại bằng $0$.
+
+Với phần log-sum-exp:
+\[
+\begin{matrix}
+\frac{\partial\left(\sum_{c=1}^C\ln(e^{\theta^T_{y_n}\bar x_n})\right)}{\partial \theta^T_{k, j}} 
+&=& \frac{\partial\left[\ln\left(\sum_{c=1}^C e^{\theta^T_{y_n}\bar x_n}\right)\right]}{\partial\left(\sum_{c=1}^C e^{\theta^T_{y_n}\bar x_n}\right)} \cdot \frac{\partial\left(\sum_{c=1}^C e^{\theta^T_{y_n}\bar x_n}\right)}{\partial\theta_{k,j}^T} \\[6pt]
+&=& \frac{1}{\sum_{c=1}^C e^{\theta^T_{y_n}\bar x_n}} \cdot e^{\theta_{y_n}^T\bar x_n} \bar x_{nj} \\[6pt]
+&=& g(\theta_k^T\bar x_n)\bar x_{nj}
+\end{matrix}
+\]
+Biểu thức trên sử dụng quy tắc chuỗi để đạo hàm hàm $\ln(\sum e^{\cdot})$.  
+Kết quả cuối cùng là tích giữa giá trị softmax $g(\theta_k^T\bar x_n)$ và thành phần đặc trưng $\bar x_{nj}$.
+
+Từ đó, ta có đạo hàm đầy đủ của log-likelihood:
+\[
+\frac{\partial l(\theta)}{\partial\theta_{k, j}} = \sum_{i=1}^N(\bar y_k^n - a_{k, n})\bar x_{nj} = \sum_{i=1}^N e_{k, n}\bar x_{nj}
+\]
+Trong đó:
+\begin{itemize}
+    \item $a_{k,n} = g(\theta_k^T\bar x_n)$ là xác suất dự đoán lớp $k$ cho mẫu $n$.
+    \item $e_{k,n} = \bar y_k^n - a_{k,n}$ là sai số giữa nhãn thật và dự đoán.
+\end{itemize}
+
+Dạng vector hóa của gradient:
+\[
+\nabla_\theta l(\theta) = \sum_{n=1}^N e_n^T\bar x_n = XE^T
+\]
+Trong đó:
+\begin{itemize}
+    \item $X = [\bar x_1, \bar x_2, \ldots, \bar x_N]^T$ là ma trận dữ liệu đầu vào.
+    \item $E = [e_1, e_2, \ldots, e_N]^T$ là ma trận sai số.
+\end{itemize}
+
+Kết quả trên cho thấy gradient của hàm mất mát có thể được biểu diễn gọn gàng bằng tích ma trận giữa đầu vào $X$ và sai số $E$, giúp việc tính toán hiệu quả hơn trong thực hành (đặc biệt khi dùng vector hóa trên GPU).
+
+\paragraph{Tóm lại:}
+\[
+\boxed{
+\nabla_\theta J(\theta) 
+= -\frac{1}{N}XE^T + \lambda\theta_{1,}
+}
+\]
+Trong đó:
+\begin{itemize}
+    \item Thành phần thứ nhất $-\frac{1}{N}XE^T$ phản ánh hướng giảm của log-likelihood.
+    \item Thành phần thứ hai $\lambda\theta_{1,}$ là điều chuẩn $L_2$ giúp tránh overfitting.
+\end{itemize}
+
+
+\subsection{Multi-Layer Perceptron (MLP)}
+Multilayer Perceptron (MLP) hay mạng Perceptron nhiều lớp là một trong những kiến trúc cơ bản nhất của mạng nơ-ron nhân tạo (Artificial Neural Network – ANN). Đây là mô hình học sâu có giám sát (supervised learning), được sử dụng rộng rãi trong các bài toán phân loại (classification), hồi quy (regression) và nhận dạng mẫu (pattern recognition).\\
+
+Cấu trúc của MLP:
+\begin{itemize}
+    \item Lớp đầu vào: Tiếp nhận dữ liệu đầu vào $x\in\mathbb{R}^d$
+    \item Các lớp ẩn: 
+    \begin{itemize}
+        \item Thực hiện biến đổi phi tuyến thông qua các hàm kích hoạt (activation functions) như ReLU, sigmoid, tanh, \ldots (Trong phần này sử dụng hàm ReLU)
+        \item Mỗi lớp ẩn có thể có nhiều nút mạng, và số lượng lớp/lớp ẩn càng nhiều thì khả năng biểu diễn càng mạnh.
+    \end{itemize}
+    \item Lớp đầu ra: Tạo ra kết quả dự đoán cuối cùng.
+\end{itemize}
+
+\textit{Giải thích:}  
+MLP được xem như một hàm ánh xạ phi tuyến nhiều tầng, trong đó mỗi lớp ẩn thực hiện việc trích rút đặc trưng ở mức độ trừu tượng cao hơn so với lớp trước. Các trọng số $W^{(l)}$ và bias $b^{(l)}$ được tối ưu để giảm thiểu sai số giữa đầu ra mô hình và nhãn thực tế thông qua quá trình học có giám sát.
+
+Gọi: 
+\begin{itemize}
+    \item Đầu vào của các hidden layer được ký hiệu bởi $z$; đầu ra của mỗi unit ký hiệu là $a$ (activation, tức giá trị của mỗi unit sau khi ta áp dụng activation function lên $z$).
+    \item Đầu ra của unit thứ $i$ trong layer thứ $l$ được ký hiệu là $a_i^{(l)}$ và số unit trong layer thứ $l$ (không tính bias) là $d^{(l)}$, ta có: $a^{(l)}\in\mathbb{R}^{d^{(l)}}$
+    \item Tham số $w$ trong Perceptron 01 layer là trọng số.
+    \item Phần tử $w_{i, j}^{(l)}$ là tham số trong tổ hợp kết nối từ node thứ i của layer thứ $(l-1) $ tới node $j$ của layer thứ $(l)$
+    \item Coi input là layer thứ 0, các trọng số $w_{i,j}$ tạo thành ma trận $W^{(l)}\in\mathbb{R}^{d^{(l-1)}\times d^{(l)}}$. Đây là ma trận trọng số $W^{(l)}$ kết nối giữa layer thứ $(l-1)$ và layer thứ $(l)$
+    \item Có L ma trận trọng số cho một MLP có L layers: $W^{(l)},$ $l = 1, 2, \ldots, L.$
+\end{itemize}
+
+\textit{Giải thích:}  
+Các ký hiệu trên giúp mô tả hình thức toán học của MLP. Mỗi lớp có vai trò biến đổi dữ liệu đầu vào qua ma trận trọng số $W^{(l)}$, thêm độ lệch $b^{(l)}$, rồi áp dụng hàm kích hoạt $f(\cdot)$. Việc sử dụng chỉ số $l$ cho phép mô hình biểu diễn các phép biến đổi tuần tự, tạo nên khả năng học biểu diễn phi tuyến sâu.
+
+Ta có output của mỗi unit là:
+$a^{(l)} = f(z^{(l)})$ với $z = W^{(l)T}a^{(l-1)} + b^{(l)}_i$
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/MLP_net.png}
+    \caption{Minh họa mạng MLP}
+    \label{fig:MLPNet}
+\end{figure}
+\textit{Giải thích:}  
+Công thức trên biểu diễn quá trình lan truyền tiến (feedforward). Mỗi lớp ẩn nhận đầu vào là đầu ra của lớp trước đó, nhân với trọng số, cộng bias, sau đó qua hàm kích hoạt để tạo ra đầu ra $a^{(l)}$. Quá trình này giúp mô hình học được mối quan hệ phi tuyến giữa đầu vào và đầu ra.
+
+Hàm ReLU:
+$$
+f(z) = \left\{\begin{matrix}
+    z &, z > 0\\
+    0 &, z \leq 0
+\end{matrix}\right.
+$$
+
+\textit{Giải thích:}  
+Hàm ReLU (Rectified Linear Unit) được chọn vì tính đơn giản và hiệu quả của nó. ReLU giúp giảm hiện tượng “vanishing gradient” so với sigmoid hoặc tanh, nhờ đạo hàm không bão hòa khi $z > 0$.
+
+Một số dạng hàm mất mát:
+\begin{itemize}
+    \item MSE (dành cho bài toán hồi quy):
+    $$J_0(W, b) = \frac{1}{N}\sum_{n=1}^N||y_n - y_{pred}||_2^2$$
+    \item Cross-Entropy (dành cho bài toán phân loại)
+    $$J_0(W, b) = -\sum_{n=1}^N\left(y_nln(a_n^{(l)}) + (1 - y_n)ln(1 - a_n^{(l)})\right)$$
+\end{itemize}
+
+\textit{Giải thích:}  
+Hàm mất mát $J_0(W,b)$ đo lường sai số giữa dự đoán của mô hình và giá trị thực. Với hồi quy, sai số bình phương trung bình (MSE) phản ánh độ lệch liên tục. Trong khi đó, hàm Cross-Entropy đo độ khác biệt giữa hai phân phối xác suất – một cách tự nhiên để đánh giá mô hình phân loại.
+
+Xét bài toán có hiệu chỉnh:
+$$J (W, b) = J_0(W, b) + \frac{\lambda}{2}\sum_{l=1}^L||W^{(l)}||^2_F$$
+
+\textit{Giải thích:}  
+Thành phần $\frac{\lambda}{2}\sum ||W^{(l)}||^2_F$ là hệ số regularization (chuẩn L2), giúp tránh hiện tượng overfitting bằng cách phạt các trọng số quá lớn, từ đó cải thiện khả năng tổng quát của mô hình.
+
+Quay trở lại bài toán ước lượng hợp lí cực đại (MLE), ta cần:
+$$J(W, b) \rightarrow \min_{W, b}$$
+
+\textit{Giải thích:}  
+Việc tối thiểu hóa $J(W, b)$ tương ứng với việc tìm bộ tham số $(W,b)$ tối ưu, sao cho mô hình dự đoán gần nhất với phân phối thật của dữ liệu — đây chính là ý tưởng của nguyên lý ước lượng hợp lý cực đại.
+
+Gradient descent là phương pháp đơn giản và phổ biến để tìm $W$ và $b$, tuy nhiên $J(W, b)$ không phải hàm lồi, nên ta không thể chắc chắn đạt được cực trị toàn cục. Nhưng với xấp xỉ ban đầu được chọn hợp lý, phương pháp dạng Gradient Descent thường vẫn cho nghiệm ($W, b$) đủ tốt.\\
+
+Tại mỗi bước lặp GD, cập nhật:
+$$
+    w^{(l)}_{i, j} = w_{i, j} - \eta\frac{\partial J(W, b)}{\partial w^{(l)}_{i, j}}
+$$
+$$
+    b_i^{(l)} = b_i^{(l)} - \eta\frac{\partial J(W, b)}{\partial b_i^{(l)}}
+$$
+
+\textit{Giải thích:}  
+Mỗi bước của thuật toán Gradient Descent dịch chuyển trọng số và bias theo hướng ngược lại với gradient của hàm mất mát. Hệ số $\eta$ (learning rate) điều khiển tốc độ học: quá nhỏ thì hội tụ chậm, quá lớn có thể gây dao động hoặc phân kỳ.
+
+Ta thấy để sử dụng gradient descent ta cần tính được:
+$$
+    \frac{\partial J(W, b)}{\partial w^{(l)}_{i, j}} \text{ và } \frac{\partial J(W, b)}{\partial b_i^{(l)}}, i = 1, \ldots, d^{(l-1)}, j = 1,\ldots, d^{(l)}
+$$
+
+Ta có:
+$$
+    \begin{matrix}
+        \frac{\partial J(W, b)}{\partial w^{(l)}_{i, j}} &=& \frac{\partial J(W, b)}{\partial z^{(l)}_i}\frac{\partial z^{(l)}_i}{\partial w_{i, j}^{(l)}}\\
+        &=& \frac{\partial J(W, b)}{\partial z^{(l)}_i} a_j^{(l-1)}
+    \end{matrix}
+$$
+
+\textit{Giải thích:}  
+Đây là bước cơ bản trong lan truyền ngược (backpropagation). Ta áp dụng quy tắc dây chuyền (chain rule) để tách đạo hàm theo từng biến trung gian. Việc biểu diễn dưới dạng $a^{(l-1)}$ cho thấy gradient ở lớp hiện tại phụ thuộc vào đầu ra của lớp trước đó.
+
+Khi đó ta cần tính: 
+$$
+e_i^{(l)} = \frac{\partial J(W, b)}{\partial z^{(l)}_i}
+$$
+
+\textit{Giải thích:}  
+$e_i^{(l)}$ được gọi là \textit{sai số cục bộ} (local error) tại nút thứ $i$ của lớp $l$, phản ánh mức độ đóng góp của nút đó vào tổng sai số của mô hình.
+
+\subparagraph{FeedForward:} là quá trình tính đầu ra theo chiều tiến, từ đầu vào $x$ đến đầu ra $y_{pred}$:
+$$
+\begin{matrix}
+    a^{(0)} &=& x\\
+    a^{(l)} &=& f(z^{(l)})\\
+    y_{pred} &=& a^{(L)}
+\end{matrix}
+$$
+
+\textit{Giải thích:}  
+Giai đoạn lan truyền tiến giúp mô hình tính toán dự đoán đầu ra dựa trên các trọng số hiện tại. Tất cả giá trị trung gian $z^{(l)}$ và $a^{(l)}$ đều được lưu lại để phục vụ cho bước lan truyền ngược.
+
+\subparagraph{Backpropagation:} lan truyền ngược là quá trình tính ngược các đạo hàm từ layer L về layer 1.
+
+Ta có:
+$$
+    \begin{matrix}
+        \frac{\partial J(W, b)}{\partial w^{(L)}_{i, j}} &=& \frac{\partial J(W, b)}{\partial z^{(L)}_i}\frac{\partial z^{(L)}_i}{\partial w_{i, j}^{(L)}}\\
+        &=& e^{(L)}_i a_j^{(L-1)}
+    \end{matrix}
+$$
+
+\textit{Giải thích:}  
+Ở lớp cuối cùng, gradient của trọng số là tích giữa sai số của neuron đích và giá trị kích hoạt của neuron ở lớp trước. Đây là nền tảng của quy tắc lan truyền ngược.
+
+Mặt khác:
+$$
+    \begin{matrix}
+        e_j^{(L)} &=& \frac{\partial J(W, b)}{\partial z_j^{(L)}}\\
+        & =& \frac{\partial J(W, b)}{\partial a_j^{(L)}}\frac{\partial a_j^{(L)}}{\partial z_j^{(L)}}\\
+        & =& \frac{\partial J(W, b)}{\partial a_j^{(L)}} F'(z_j^{(L)})
+    \end{matrix}
+$$
+
+\textit{Giải thích:}  
+Công thức trên cho thấy sai số ở lớp cuối cùng phụ thuộc vào độ nhạy của hàm mất mát đối với đầu ra ($\partial J / \partial a^{(L)}$) và độ nhạy của hàm kích hoạt ($F'(z)$). Đây là bước khởi đầu cho chuỗi lan truyền ngược qua các lớp.
+
+Lan truyền ngược:
+$$
+\begin{matrix}
+    e^{(l)}_j &=& \frac{\partial J(W, b)}{\partial z_j^{(l)}}\\ 
+    &=& \frac{\partial J(W, b)}{\partial a_j^{(l)}}f'(z)
+\end{matrix}
+$$
+
+\textit{Giải thích:}  
+Sai số tại lớp $l$ được xác định từ đạo hàm của hàm kích hoạt $f'(z)$ nhân với gradient của sai số theo đầu ra $a^{(l)}$. Quá trình này được lặp ngược từ lớp cuối về lớp đầu, cho phép tính gradient một cách hiệu quả.
+
+Mặt khác:
+$$
+    \begin{matrix}
+    &z^{(l + 1)} = W^{(l + 1)T}a^{(l)} + b^{(l + 1)}\\
+    \Leftrightarrow& z^{(l + 1)}_i = \sum_{j=1}^{d^{(l)}}w_{i, j}^{(l + 1)} a_j^{(l)} + b^{(l+1)}_i
+    \end{matrix}
+$$
+nên:
+$$
+    \begin{matrix}
+        \frac{\partial J(W, b)}{\partial a_j^{(l)}} &=& \frac{\partial J(\{z_1^{(l + 1)}a_j^{(l)}, z_2^{(l + 1)}a_j^{(l)}, \ldots,  z_{d^{(l + 1)}}^{(l + 1)}a_j^{(l)}\})}{\partial a_j^{(l)}} \\
+        &=& \sum_{k=1}^{d^{(l+1)}}\frac{\partial J(W,b)}{\partial z_k^{(l + 1)}}\frac{\partial z_k^{(l+1)}}{\partial a_j^{(l)}}\\
+        &=& \sum_{k=1}^{d^{(l+1)}} e^{(l+1)}w_{j,k}^{(l+1)}
+    \end{matrix}
+$$
+
+\textit{Giải thích:}  
+Bằng quy tắc dây chuyền, gradient tại lớp $l$ được biểu diễn bằng tổng có trọng số của các sai số ở lớp $(l+1)$, trong đó trọng số chính là các hệ số kết nối $w^{(l+1)}$. Điều này cho phép lan truyền ảnh hưởng của sai số đầu ra ngược về các lớp trước.
+
+Vậy ta có:
+$$
+    e^{(l)}_j = \left(w^{(l+1)}_{j,:} e^{(l+1)}\right)f'\left(z_j^{(l)}\right)
+$$
+
+\textit{Giải thích:}  
+Đây là công thức tổng quát cho lan truyền ngược: sai số tại một neuron bằng tích giữa tổng có trọng số của sai số lớp sau và đạo hàm của hàm kích hoạt tại điểm đó. Công thức này là cốt lõi của quá trình huấn luyện MLP thông qua thuật toán Backpropagation.

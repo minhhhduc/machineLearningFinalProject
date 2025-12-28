@@ -1,0 +1,35 @@
+\chapter{Mở đầu}
+\section{Giới thiệu bài toán}
+\subparagraph{Sơ lược bài toán:} Nhận diện từ loại (Part-of-Speech - POS Tagging)~\cite{definition_pos_tagging} là một nhiệm vụ cơ bản và quan trọng bậc nhất trong lĩnh vực Xử lý Ngôn ngữ Tự nhiên (NLP). Việc xác định đúng từ loại là bước nền tảng để máy tính có thể "hiểu" được cấu trúc và ngữ nghĩa của câu. Nếu không biết từ nào là danh từ, từ nào là động từ, máy tính không thể phân tích được ai đang làm gì (chủ ngữ - vị ngữ).
+
+\subparagraph{Mục tiêu bài toán:} Gán cho mỗi từ (hoặc cụm từ) trong câu một nhãn (tag) tương ứng với vai trò ngữ pháp của nó. Các nhãn này chính là các "từ loại" quen thuộc ví dụ như:
+\begin{itemize}
+    \item \textbf{N (Noun):} Danh từ (ví dụ: sách, Hà Nội, máy tính).
+    \item \textbf{V (Verb):} Động từ (ví dụ: đi, học, yêu cầu).
+    \item \textbf{Adj (Adjective):} Tính từ (ví dụ: đẹp, thông minh, nhanh).
+    \item \textbf{Adv (Adverb):} Trạng từ (ví dụ: rất, hôm nay, chậm).
+    \item \textbf{P (Pronoun):} Đại từ (ví dụ: tôi, họ, nó).
+    \item \textbf{Conj (Conjunction):} Liên từ (ví dụ: và, nhưng, vì).
+    \item \textbf{Prep (Preposition):} Giới từ (ví dụ: trong, trên, với) ... và nhiều loại từ chuyên biệt khác (chỉ từ, số từ, thán từ, v.v.).
+\end{itemize}
+
+\newpage
+\subparagraph{Ứng dụng:}
+\begin{itemize}
+    \item \textbf{Dịch máy (Machine Translation)\cite{pos_tagging_in_machine_translation}:} Cần biết cấu trúc ngữ pháp để dịch sang ngôn ngữ khác một cách chính xác.
+    \item \textbf{Hệ thống Hỏi-Đáp (Question Answering)\cite{pos_tagging_in_QA}:} Giúp máy hiểu câu hỏi (ví dụ: "Ai...", "Ở đâu...") và tìm kiếm câu trả lời tương ứng (thường là danh từ).
+    \item \textbf{Phân tích Cảm xúc (Sentiment Analysis)\cite{pos_tagging_in_semantic_analysis_2, pos_tagging_in_semantic_analysis_1}:} Giúp tập trung vào các tính từ (Adj) và trạng từ (Adv) để xác định thái độ tích cực hay tiêu cực.
+    \item \textbf{Trích xuất Thông tin (Information Extraction)\cite{pos_tagging_in_information_retrieval}:} Tìm kiếm các tên riêng (Danh từ riêng), địa điểm, tổ chức.
+    \item \textbf{Kiểm tra Ngữ pháp (Grammar Checking)\cite{pos_tagging_in_grammar_checking}:} Phát hiện các lỗi sai cấu trúc câu.
+\end{itemize}
+
+\newpage
+\section{Mục tiêu}
+\begin{itemize}
+    \item \textbf{Ứng dụng PhoBERT:} Áp dụng mô hình ngôn ngữ lớn PhoBERT để trích rút đặc trưng ngữ nghĩa (semantic features) từ dữ liệu văn bản thô, chuyển đổi văn bản tiếng Việt thành các vector đặc trưng số hóa có ý nghĩa.
+
+    \item \textbf{Xây dựng và So sánh Mô hình Phân loại:} Huấn luyện và đánh giá hiệu suất của các mô hình học máy truyền thống (ví dụ: Naive Bayes, SVM,...) trên bài toán phân loại, sử dụng bộ đặc trưng đầy đủ (full-dimension features) trích rút từ PhoBERT để tìm ra mô hình cơ sở (baseline) tốt nhất.
+
+    \item \textbf{Nghiên cứu Tối ưu hóa Đặc trưng:} Khám phá ảnh hưởng của kỹ thuật giảm chiều dữ liệu (ví dụ: PCA) lên không gian đặc trưng của PhoBERT. Mục tiêu là phân tích sự cân bằng (trade-off) giữa độ chính xác của mô hình và hiệu quả tính toán (giảm thời gian huấn luyện, giảm độ phức tạp).
+    % \item \textbf{Đánh giá Bài toán Thay thế (Phân loại $\rightarrow$ Hồi quy):} Chuyển đổi bài toán từ phân loại (dự đoán nhãn rời rạc) sang bài toán hồi quy (dự đoán giá trị liên tục). Mục tiêu là kiểm tra xem việc “liên tục hóa” biến mục tiêu có giúp mô hình học được thông tin sâu hơn và mang lại kết quả thực tế, tổng quát hơn hay không, đồng thời so sánh hiệu suất với hướng tiếp cận phân loại.
+\end{itemize}

@@ -1,0 +1,37 @@
+
+\input{preamble}
+
+\begin{document}
+
+\pagenumbering{gobble} % Ẩn số trang
+\input{conver_page}            % (file bia.tex của bạn)
+\clearpage
+
+% ---------- TRANG MỤC LỤC ----------
+\pagenumbering{gobble} % Tiếp tục ẩn số trang
+\tableofcontents
+\clearpage
+
+% ---------- BẮT ĐẦU NỘI DUNG ----------
+\pagenumbering{arabic} % Đánh số lại từ 1
+\setcounter{page}{1}
+
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+\include{chapters/chapter1}
+\include{chapters/chapter2}
+\include{chapters/chapter3}
+\include{chapters/chapter4}
+\include{chapters/chapter5}
+% \include{chapters/chapter6}
+
+% cuối trang
+
+\begin{sloppypar}
+\printbibliography[title={Tài liệu tham khảo}]
+\end{sloppypar}
+\end{document}

@@ -1,0 +1,273 @@
+\chapter{Thực nghiệm}
+\section{Bộ dữ liệu}
+
+Tiểu luận này sử dụng bộ dữ liệu gán nhãn từ loại tiếng Việt \texttt{pos\_tagging\_dataset} \cite{dataset}, được công bố trên nền tảng Kaggle. Toàn bộ bộ dữ liệu bao gồm 9511 câu đã được gán nhãn.
+
+Dữ liệu thô tuân theo định dạng \texttt{từ/nhãn}, trong đó mỗi từ (token) và nhãn từ loại (POS tag) tương ứng được phân tách bởi ký tự gạch chéo (`/`). Một câu trong bộ dữ liệu có dạng như sau:
+
+\begin{quote}
+ % Sử dụng font nhỏ để câu ví dụ không bị tràn
+\texttt{Trên/E đường/N xuất\_hiện/V nhiều/A cặp/N cha/N -/- con/N ,/, mẹ/N -/- con/N ,/, hay/C có\_khi/Ny là/C cả/T nhà/N ,/, tay\_xách\_nách\_mang/Ny vừa/R đi/V vừa/R dò/V bản\_đồ/N ./. }
+\end{quote}
+
+Sau quá trình tiền xử lý và tách nhãn, việc phân tích thống kê được thực hiện trên toàn bộ 9511 câu.
+
+\subparagraph{Thống kê độ dài câu:}
+Phân tích về số lượng token trong một câu cho thấy các đặc điểm sau:
+\begin{itemize}
+    \item \textbf{Độ dài trung bình (mean):} 22.87 token mỗi câu.
+    \item \textbf{Độ dài tối thiểu (min):} 6 token.
+    \item \textbf{Độ dài tối đa (max):} 129 token.
+\end{itemize}
+
+Phân bố chi tiết của độ dài câu được minh hoạ trong Hình \ref{fig:sentence_length_hist}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/sen_length_distribution.png}
+    \caption{Phân bố độ dài câu trong bộ dữ liệu.}
+    \label{fig:sentence_length_hist}
+\end{figure}
+% --------------------------------------------------
+
+\subparagraph{Thống kê phân bố nhãn từ loại (POS Tag):}
+Bộ dữ liệu bao gồm 20 nhãn từ loại riêng biệt. Bảng \ref{tab:pos_tag_stats} trình bày chi tiết tần suất xuất hiện và tỷ lệ phần trăm của từng nhãn trên toàn bộ tập dữ liệu (sau khi đã tách từ và nhãn).
+
+\begin{table}[H]
+    \centering
+    \caption{Thống kê phân bố các nhãn từ loại (POS Tag) trong bộ dữ liệu.}
+    \label{tab:pos_tag_stats}
+    \resizebox{0.8\textwidth}{!}{% Phóng to/thu nhỏ bảng để vừa với chiều rộng
+    \begin{tabular}{lrr | lrr}
+        \toprule
+        \textbf{Nhãn (Tag)} & \textbf{Số lượng} & \textbf{Tỷ lệ (\%)} & \textbf{Nhãn (Tag)} & \textbf{Số lượng} & \textbf{Tỷ lệ (\%)} \\
+        \midrule
+        N     & 51557 & 23.70\% & L     & 3934  & 1.81\% \\
+        V     & 42597 & 19.58\% & X     & 2187  & 1.01\% \\
+        PUNCT & 32115 & 14.76\% & T     & 1407  & 0.65\% \\
+        R     & 15822 & 7.27\%  & Nu    & 1032  & 0.47\% \\
+        E     & 13541 & 6.22\%  & Nb    & 402   & 0.18\% \\
+        A     & 13427 & 6.17\%  & S     & 161   & 0.07\% \\
+        P     & 9265  & 4.26\%  & I     & 91    & 0.04\% \\
+        Np    & 8518  & 3.92\%  & Y     & 53    & 0.02\% \\
+        M     & 8085  & 3.72\%  & B     & 23    & 0.01\% \\
+        C     & 7892  & 3.63\%  &       &       &        \\
+        Nc    & 5448  & 2.50\%  &       &       &        \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Phân tích từ Bảng \ref{tab:pos_tag_stats} cho thấy rõ \textbf{sự mất cân bằng} về phân phối của dữ liệu. Ba nhãn phổ biến nhất là \textbf{N} (Danh từ), \textbf{V} (Động từ) và \textbf{PUNCT} (Dấu câu) chiếm tới 58.04\% tổng số nhãn. Ngược lại, các nhãn như \textbf{I}, \textbf{Y}, và \textbf{B} là cực kỳ hiếm, mỗi nhãn chiếm dưới 0.05\%. Sự mất cân bằng này là một yếu tố quan trọng ảnh hưởng trực tiếp đến quá trình huấn luyện và đánh giá các mô hình, đặc biệt là đối với các lớp thiểu số.
+
+Sau đó, quá trình trích xuất đặc trưng bằng PhoBERT được áp dụng tuần tự cho từng câu trong bộ dữ liệu. Do PhoBERT hoạt động ở cấp độ subword, một quy trình tổng hợp (mean pooling) đã được thực hiện để ánh xạ các vector subword trở lại 217.557 token gốc.
+
+Kết quả của quy trình này là 217.557 bản ghi, trong đó mỗi bản ghi là một cặp (vector, nhãn). Phần vector là một biểu diễn ngữ nghĩa có 768 chiều, được trích xuất từ tầng cuối cùng của mô hình PhoBERT, thể hiện ngữ cảnh của token đó trong câu. Phần nhãn là POS tag tương ứng với token.
+
+Như vậy, từ 9511 câu, một bộ dữ liệu dạng bảng đã được xây dựng, bao gồm 217.557 mẫu, với mỗi mẫu là một vector 768 chiều, đây là dữ liệu sẽ được dùng để huấn luyện các mô hình học máy.
+\subparagraph{Phân tích tương quan và trực quan hóa dữ liệu:}
+Bằng phương pháp giảm chiều LDA, dữ liệu được giảm từ 768 chiều xuống 6 chiều. Kết quả của quá trình này được trực quan hóa thông qua ma trận biểu đồ trong Hình~\ref{fig:lda_pair_plot}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/LDA_matrix.png} 
+    \caption{Biểu đồ quan hệ cặp của 6 thành phần LDA sau khi giảm chiều từ dữ liệu PhoBERT.}
+    \label{fig:lda_pair_plot}
+\end{figure}
+
+Từ Hình~\ref{fig:lda_pair_plot}, một số nhận xét quan trọng có thể được rút ra:
+\begin{itemize}
+    \item \textbf{Sự tách biệt của lớp dấu câu (PUNCT):} Quan sát nổi bật nhất là sự tách biệt gần như hoàn toàn của lớp \texttt{PUNCT} (màu xanh lam). Đặc biệt, thành phần thứ nhất (LDA1) đã đóng vai trò chính trong việc phân tách lớp này ra khỏi tất cả các lớp từ loại khác. Điều này được thể hiện rõ ở cột đầu tiên và hàng đầu tiên của ma trận, nơi cụm điểm màu xanh lam nằm ở một vùng riêng biệt so với phần còn lại của dữ liệu.
+
+    \item \textbf{Sự phân cụm của các từ loại khác:} Đối với các từ loại còn lại, các thành phần từ LDA2 đến LDA6 cho thấy dữ liệu có xu hướng phân thành các cụm riêng biệt, mặc dù có sự chồng chéo nhất định. Có thể thấy rõ các cụm màu sắc khác nhau (tương ứng với các nhãn như N, V, A,...) có xu hướng tập trung tại các vùng khác nhau trong không gian 6 chiều mới. Điều này cho thấy các vector đặc trưng sau khi giảm chiều vẫn giữ lại được những thông tin ngữ nghĩa hữu ích để phân biệt các lớp.
+
+    \item \textbf{Mức độ chồng chéo:} Mặc dù có sự phân cụm, vẫn tồn tại sự chồng chéo đáng kể giữa một số lớp. Ví dụ, trong biểu đồ của LDA2 và LDA3, các cụm màu xanh lá cây, hồng và vàng có sự giao thoa. Điều này cho thấy một số từ loại có thể có đặc điểm ngữ nghĩa hoặc ngữ cảnh sử dụng tương đồng trong không gian vector của PhoBERT mà LDA chưa thể phân tách hoàn toàn.
+\end{itemize}
+
+Nhìn chung, kết quả trực quan hóa này khẳng định rằng việc giảm chiều bằng LDA đã thành công trong việc tìm ra một không gian đặc trưng mới có khả năng phân biệt tốt các lớp POS tag. Dữ liệu sau khi giảm chiều vẫn giữ lại được thông tin quan trọng, tạo tiền đề thuận lợi cho việc xây dựng và huấn luyện các mô hình học máy ở giai đoạn tiếp theo.
+
+Để có một cái nhìn tổng quan và trực quan hơn nữa, sẽ tiếp tục thực hiện giảm chiều dữ liệu xuống chỉ còn 2 thành phần chính. Kết quả được minh họa trong Hình~\ref{fig:lda_2d_plot}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/2D_LDA_10kToken.png} 
+    \caption{Trực quan hóa dữ liệu trên không gian 2 chiều sử dụng LDA. Mỗi điểm biểu diễn một token, màu sắc tương ứng với nhãn POS tag thực tế.}
+    \label{fig:lda_2d_plot}
+\end{figure}
+
+Biểu đồ trong Hình~\ref{fig:lda_2d_plot} củng cố một cách mạnh mẽ nhận định từ ma trận biểu đồ 6 chiều trước đó:
+\begin{itemize}
+    \item \textbf{Khả năng phân tách của LDA Component 1:} Thành phần LDA thứ nhất (trục hoành) một lần nữa cho thấy khả năng vượt trội trong việc phân tách hoàn toàn lớp \texttt{PUNCT} (cụm điểm màu xanh lam bên phải) ra khỏi tất cả các từ loại còn lại. Điều này cho thấy đặc trưng của dấu câu là khác biệt nhất trong không gian vector của PhoBERT.
+    
+    \item \textbf{Sự mất mát thông tin:} Tuy nhiên, khi chỉ sử dụng 2 chiều, tất cả các lớp từ loại khác (danh từ, động từ, tính từ, v.v.) bị dồn lại thành một cụm lớn và chồng chéo lên nhau rất nhiều (cụm điểm nhiều màu sắc bên trái). Trong không gian 2 chiều này, việc phân biệt rạch ròi các lớp này gần như là không thể.
+\end{itemize}
+
+\noindent
+Kết quả này cho thấy rằng, mặc dù 2 chiều là hữu ích để có cái nhìn tổng quan và xác nhận sự khác biệt của lớp dễ phân biệt nhất, nhưng nó lại làm mất đi nhiều thông tin quan trọng cần thiết để phân biệt các lớp phức tạp hơn. Điều này khẳng định sự cần thiết của việc sử dụng số chiều lớn hơn để giữ lại đủ thông tin cho mô hình phân loại hoạt động hiệu quả.
+
+\section{Môi trường thực nghiệm}
+
+Các thí nghiệm trong nghiên cứu này được triển khai và thực thi trên nền tảng Google Colab, một môi trường điện toán đám mây cho phép huấn luyện và đánh giá mô hình học máy trực tuyến. Việc sử dụng Google Colab giúp tận dụng hiệu quả tài nguyên tính toán, hỗ trợ cài đặt linh hoạt các thư viện Python chuyên dụng trong lĩnh vực xử lý ngôn ngữ tự nhiên.
+
+Cấu hình phần cứng chính được sử dụng trong quá trình huấn luyện bao gồm GPU NVIDIA Tesla T4 với bộ nhớ đồ họa 15GB, cùng với môi trường phần mềm dựa trên Python 3.12.12 và các thư viện liên quan như \texttt{PyTorch}, \texttt{Transformers}, \texttt{Scikit-learn} và \texttt{NumPy}. Môi trường GPU giúp tăng tốc quá trình huấn luyện và suy luận của mô hình, đặc biệt khi sử dụng các mô hình ngôn ngữ lớn như PhoBERT.
+
+Tất cả các thực nghiệm, bao gồm huấn luyện các mô hình Naive Bayes, Softmax Regression hay Multi Layer Perceptron, đều được thực hiện trong cùng điều kiện phần cứng và phần mềm nhằm đảm bảo tính nhất quán và khả năng tái lập của kết quả.
+
+\section{Kết quả}
+
+Các thí nghiệm được thiết kế để đánh giá hiệu suất mô hình dựa trên ba yếu tố:
+\begin{enumerate}
+    \item \textbf{Thuật toán mô hình:} Naive Bayes (NB), Softmax Regression (SR), và Multi-Layer Perceptron (MLP).
+    \item \textbf{Số chiều đặc trưng:} Dữ liệu gốc (768 chiều) và dữ liệu giảm chiều bằng PCA (xuống 256 và 64 chiều).
+    \item \textbf{Tỉ lệ phân chia Train/Test:} 80/20, 70/30, và 60/40.
+\end{enumerate}
+
+Bài tiểu luận tập trung vào hai chỉ số đánh giá chính: Accuracy (Độ chính xác) và F1-Score (Weighted Avg và Macro Avg) để xử lý tính mất cân bằng của dữ liệu.
+
+Kết quả chi tiết được trình bày riêng cho từng mô hình trong các Bảng \ref{tab:nb_results}, \ref{tab:sr_results}, và \ref{tab:mlp_results}.
+
+% ------- BẢNG 1: NAIVE BAYES (NB) -------
+\begin{table}[H]
+    \centering
+    \caption{Kết quả của mô hình Naive Bayes (GaussianNB) theo số chiều và tỉ lệ chia.}
+    \label{tab:nb_results}
+    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{l ccc | ccc | ccc} 
+            \toprule
+            \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+            \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+             & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+            \midrule
+            768 (Gốc) & 0.68 & 0.68 & 0.68 & 0.70 & 0.70 & 0.70 & 0.55 & 0.55 & 0.56 \\
+            256       & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.66} & \textbf{0.67} & \textbf{0.68} \\
+            64        & 0.74 & 0.74 & 0.74 & 0.76 & 0.76 & 0.75 & 0.59 & 0.59 & 0.59 \\
+            \bottomrule
+        \end{tabular}%
+    } % --- KẾT THÚC \resizebox ---
+\end{table}
+
+% ------- BẢNG 2: SOFTMAX REGRESSION (SR) -------
+\begin{table}[H]
+    \centering
+    \caption{Kết quả của mô hình Softmax Regression (SR) theo số chiều và tỉ lệ chia.}
+    \label{tab:sr_results}
+    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{l ccc | ccc | ccc}
+            \toprule
+            \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+            \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+             & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+            \midrule
+            768 (Gốc) & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.72} & \textbf{0.77} & \textbf{0.75} \\
+            256       & 0.89 & 0.89 & \textbf{0.91} & 0.88 & 0.89 & \textbf{0.91} & 0.63 & 0.64 & \textbf{0.75} \\
+            64        & 0.83 & 0.83 & 0.83 & 0.82 & 0.82 & 0.82 & 0.57 & 0.57 & 0.57 \\
+            \bottomrule
+        \end{tabular}%
+    } % --- KẾT THÚC \resizebox ---
+\end{table}
+
+% ------- BẢNG 3: MULTI-LAYER PERCEPTRON (MLP) -------
+\begin{table}[H]
+    \centering
+    \caption{Kết quả của mô hình Multi-Layer Perceptron (MLP) theo số chiều và tỉ lệ chia.}
+    \label{tab:mlp_results}
+    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l ccc | ccc | ccc}
+        \toprule
+        \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+        \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+         & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+        \midrule
+        768 (Gốc) & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.68} & \textbf{0.67} & \textbf{0.66} \\
+        256       & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.66 & 0.66 & 0.64 \\
+        64        & 0.88 & 0.88 & 0.87 & 0.88 & 0.87 & 0.87 & 0.61 & 0.60 & 0.59 \\
+        \bottomrule
+    \end{tabular}%
+    } % --- KẾT THÚC \resizebox ---
+\end{table}
+
+% ------- BẢNG 4: F1-SCORE CHI TIẾT (Bôi đậm giá trị cao nhất) -------
+\begin{table}[h!]
+    \centering
+    \small % Sử dụng font chữ nhỏ hơn một chút để đảm bảo vừa vặn
+    \caption{So sánh F1-Score chi tiết của từng nhãn (Navie bayes tại 256 chiều; Softmax regression và Multi-Layer perceptron tại 768 chiều với tỷ lệ Train/Test là 70/30).}
+    \label{tab:f1_per_label_alphabetical}
+    
+    % --- Cấu trúc 5 cột: l (Nhãn), r (Support), 3x c (Kết quả) ---
+    \begin{tabular}{lrccc}
+        \toprule
+        \textbf{Nhãn} & \textbf{Số bản ghi} & \textbf{NB (256D)} & \textbf{SR (768D)} & \textbf{MLP (768D)} \\
+        \cmidrule(lr){1-5} % Đường kẻ đầy đủ
+        
+        \midrule
+        % --- Dữ liệu đã bôi đậm giá trị cao nhất theo hàng ---
+        A     & 4028  & 0.72 & 0.79 & \textbf{0.81} \\
+        B     & 7     & 0.26 & \textbf{0.60} & 0.00 \\
+        C     & 2368  & 0.86 & \textbf{0.93} & \textbf{0.93} \\
+        E     & 4062  & 0.87 & \textbf{0.93} & \textbf{0.93} \\
+        I     & 27    & 0.47 & \textbf{0.49} & 0.00 \\
+        L     & 1180  & 0.91 & \textbf{0.96} & \textbf{0.96} \\
+        M     & 2426  & 0.92 & \textbf{0.98} & 0.97 \\
+        N     & 15467 & 0.81 & 0.91 & \textbf{0.92} \\
+        Nb    & 121   & 0.45 & \textbf{0.56} & 0.36 \\
+        Nc    & 1634  & 0.68 & 0.76 & \textbf{0.79} \\
+        Np    & 2555  & 0.69 & \textbf{0.86} & \textbf{0.86} \\
+        Nu    & 310   & 0.77 & \textbf{0.87} & 0.86 \\
+        P     & 2780  & 0.86 & 0.94 & \textbf{0.95} \\
+        PUNCT & 9635  & 0.89 & \textbf{1.00} & \textbf{1.00} \\
+        R     & 4747  & 0.79 & \textbf{0.89} & \textbf{0.89} \\
+        S     & 48    & 0.44 & \textbf{0.71} & 0.04 \\
+        T     & 422   & 0.46 & \textbf{0.62} & 0.59 \\
+        V     & 12779 & 0.79 & 0.90 & \textbf{0.91} \\
+        X     & 656   & 0.51 & \textbf{0.66} & 0.65 \\
+        Y     & 16    & \textbf{0.21} & 0.00 & 0.00 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subparagraph{Phân tích chi tiết kết quả thực nghiệm:}
+Dựa trên kết quả tổng hợp từ các Bảng \ref{tab:nb_results}, \ref{tab:sr_results}, \ref{tab:mlp_results}, và \ref{tab:f1_per_label_alphabetical}, các nhận định chi tiết có thể rút ra như sau:
+
+% ---- Phân tích 1: Hiệu suất tổng thể và PCA ----
+\subparagraph{Hiệu suất tổng thể và tác động của PCA:}
+Về mặt hiệu suất tổng thể, mô hình Multi-Layer perceptron (768D, 80/20) đạt kết quả cao nhất với Accuracy đạt 0.92 (Bảng \ref{tab:mlp_results}). Mô hình Softmax Regression (SR) (768D) bám sát ngay sau với Accuracy đạt 0.91.
+
+Một phát hiện quan trọng là tác động của PCA: Giảm chiều xuống 256D cải thiện đáng kể hiệu suất của Naive Bayes (Accuracy tăng từ 0.68 lên 0.81), có thể do 256 đặc trưng mới tuân thủ tốt hơn giả định Gaussian của Navie bayes. Ngược lại, PCA làm suy giảm hiệu suất của cả Softmax regression và Multi-Layer perceptron, cho thấy các mô hình này tận dụng hiệu quả không gian đặc trưng 768 chiều giàu thông tin của PhoBERT và việc nén tuyến tính (PCA) đã gây mất mát thông tin hữu ích.
+
+% ---- Phân tích 2: Sự mất cân bằng (Macro vs Weighted) ----
+\subparagraph{Đánh giá sự mất cân bằng:}
+SR là mô hình cân bằng hơn. Sự chênh lệch lớn giữa F1-Weighted (bị chi phối bởi lớp đa số) và F1-Macro (coi các lớp như nhau) là rõ rệt trên cả ba mô hình, cho thấy tác động của việc mất cân bằng dữ liệu:
+\begin{itemize}
+    \item \textbf{MLP (768D, 80/20):} F1-Weighted 0.92 so với F1-Macro 0.68.
+    \item \textbf{SR (768D, 70/30):} F1-Weighted 0.91 so với F1-Macro 0.77.
+\end{itemize}
+Chỉ số F1-Macro của SR (0.77) cao hơn đáng kể so với MLP (0.68). Điều này cung cấp bằng chứng ban đầu cho thấy Softmax regression, dù có Accuracy tổng thể thấp hơn một chút, nhưng là mô hình cân bằng và ít thiên vị hơn trong việc xử lý các lớp thiểu số.
+
+% ---- Phân tích 3: Phân tích chi tiết F1 từng nhãn (NHẤN MẠNH YÊU CẦU) ----
+\subparagraph{Phân tích chi tiết từng nhãn:} Softmax regression vượt trội Multi-Layer perceptron ở các lớp thiểu số
+
+Phân tích F1-Score của từng nhãn trong Bảng \ref{tab:f1_per_label_alphabetical} đã làm rõ nhận định trên và là kết quả quan trọng nhất của thí nghiệm này.
+
+Trên các lớp đa số (N, V, PUNCT, E, C...), cả SR và MLP đều đạt hiệu suất rất cao, với SR nhỉnh hơn ở nhãn 'M' (0.98) và MLP hơn ở 'N' (0.92), 'V' (0.91).
+
+Tuy nhiên, sự khác biệt nằm ở các lớp thiểu số. Bảng \ref{tab:f1_per_label_alphabetical} cho thấy Softmax Regression vượt trội rõ rệt so với Multi-Layer Perceptron trong việc xử lý các lớp này:
+\begin{itemize}
+    \item \textbf{Multi-Layer Perceptron mất cân bằng và kém hiệu quả hơn:} Mô hình MLP (vốn có Accuracy tổng thể cao nhất) dường như đã bỏ qua các lớp cực hiếm. Nó đạt F1-Score bằng 0.00 cho các nhãn \textbf{B} (7 mẫu), \textbf{I} (27 mẫu), và \textbf{Y} (16 mẫu). Trên nhãn \textbf{S} (48 mẫu), hiệu suất cũng gần như bằng không (F1 = 0.04).
+    \item \textbf{Softmax regression cân bằng và hiệu quả hơn:} Ngược lại, SR thể hiện khả năng phân loại tốt hơn đáng kể. SR đạt F1-Score ấn tượng trên \textbf{B} (\textbf{0.60}) và \textbf{S} (\textbf{0.71}), và duy trì mức F1 chấp nhận được trên \textbf{I} (\textbf{0.49}). SR chỉ thất bại trên nhãn 'Y'.
+\end{itemize}
+Phân tích này chỉ ra rằng, trong khi MLP tối ưu hóa tốt hơn trên tổng thể (có thể do quá khớp nhẹ vào các lớp đa số), Softmax Regression lại là mô hình tổng quát hóa tốt hơn và đáng tin cậy hơn khi áp dụng cho bài toán có dữ liệu mất cân bằng nghiêm trọng này.
+
+% ---- Phân tích 4: Ảnh hưởng của tỉ lệ chia ----
+\subparagraph{Ảnh hưởng của tỉ lệ chia dữ liệu:}
+Một quan sát cuối cùng là hiệu suất của các mô hình gần như không thay đổi khi tỉ lệ chia là 80/20, 70/30 hay 60/40 (ví dụ: SR 768D luôn đạt Accuracy 0.91). Điều này cho thấy chỉ cần 60\% dữ liệu huấn luyện đã đủ để các mô hình này hội tụ, nhấn mạnh rằng chất lượng đặc trưng (PhoBERT) và lựa chọn kiến trúc mô hình quan trọng hơn là tăng thêm một lượng nhỏ dữ liệu.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/confusion_matrix.png}
+    \caption{Ma trận nhầm lẫn của phương pháp Hồi quy Softmax trên dữ liệu 768 chiều với tỷ lệ chia Train/Test là 70/30.}
+    \label{fig:sentence_length_hist}
+\end{figure}
