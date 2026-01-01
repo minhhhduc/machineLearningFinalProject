@@ -1,8 +1,8 @@
 \chapter{Mở đầu}
 \section{Giới thiệu bài toán}
-\subparagraph{Sơ lược bài toán:} Nhận diện từ loại (Part-of-Speech - POS Tagging)~\cite{definition_pos_tagging} là một nhiệm vụ cơ bản và quan trọng bậc nhất trong lĩnh vực Xử lý Ngôn ngữ Tự nhiên (NLP). Việc xác định đúng từ loại là bước nền tảng để máy tính có thể "hiểu" được cấu trúc và ngữ nghĩa của câu. Nếu không biết từ nào là danh từ, từ nào là động từ, máy tính không thể phân tích được ai đang làm gì (chủ ngữ - vị ngữ).
+\subparagraph{Tổng quan về bài toán:} Nhận diện từ loại (Part-of-Speech - POS Tagging)~\cite{definition_pos_tagging} là một nhiệm vụ cơ bản và quan trọng bậc nhất trong lĩnh vực Xử lý Ngôn ngữ Tự nhiên (NLP). Việc xác định đúng từ loại là bước nền tảng để hệ thống máy tính có thể phân tích và xử lý cấu trúc cũng như ngữ nghĩa của câu. Việc thiếu thông tin về từ loại sẽ gây khó khăn cho việc xác định vai trò của các thành phần trong câu (như chủ ngữ, vị ngữ), từ đó ảnh hưởng đến hiệu quả của các bài toán xử lý ngôn ngữ phức tạp hơn.
 
-\subparagraph{Mục tiêu bài toán:} Gán cho mỗi từ (hoặc cụm từ) trong câu một nhãn (tag) tương ứng với vai trò ngữ pháp của nó. Các nhãn này chính là các "từ loại" quen thuộc ví dụ như:
+\subparagraph{Mục tiêu nghiên cứu:} Nhiệm vụ chính là gán cho mỗi từ (hoặc cụm từ) trong câu một nhãn (tag) tương ứng với vai trò ngữ pháp của nó. Các nhãn này đại diện cho các từ loại quen thuộc, bao gồm:
 \begin{itemize}
     \item \textbf{N (Noun):} Danh từ (ví dụ: sách, Hà Nội, máy tính).
     \item \textbf{V (Verb):} Động từ (ví dụ: đi, học, yêu cầu).
@@ -30,6 +30,6 @@
 
     \item \textbf{Xây dựng và So sánh Mô hình Phân loại:} Huấn luyện và đánh giá hiệu suất của các mô hình học máy truyền thống (ví dụ: Naive Bayes, SVM,...) trên bài toán phân loại, sử dụng bộ đặc trưng đầy đủ (full-dimension features) trích rút từ PhoBERT để tìm ra mô hình cơ sở (baseline) tốt nhất.
 
-    \item \textbf{Nghiên cứu Tối ưu hóa Đặc trưng:} Khám phá ảnh hưởng của kỹ thuật giảm chiều dữ liệu (ví dụ: PCA) lên không gian đặc trưng của PhoBERT. Mục tiêu là phân tích sự cân bằng (trade-off) giữa độ chính xác của mô hình và hiệu quả tính toán (giảm thời gian huấn luyện, giảm độ phức tạp).
+    \item \textbf{Nghiên cứu tác động của giảm chiều dữ liệu:} Khám phá ảnh hưởng của kỹ thuật giảm chiều dữ liệu (ví dụ: PCA) lên không gian đặc trưng của PhoBERT. Mục tiêu là phân tích sự cân bằng (trade-off) giữa độ chính xác của mô hình và hiệu quả tính toán (giảm thời gian huấn luyện, giảm độ phức tạp).
     % \item \textbf{Đánh giá Bài toán Thay thế (Phân loại $\rightarrow$ Hồi quy):} Chuyển đổi bài toán từ phân loại (dự đoán nhãn rời rạc) sang bài toán hồi quy (dự đoán giá trị liên tục). Mục tiêu là kiểm tra xem việc “liên tục hóa” biến mục tiêu có giúp mô hình học được thông tin sâu hơn và mang lại kết quả thực tế, tổng quát hơn hay không, đồng thời so sánh hiệu suất với hướng tiếp cận phân loại.
 \end{itemize}

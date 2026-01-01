@@ -1,16 +1,16 @@
 \chapter{Phương pháp giải quyết}
-\section{Tiền xử lí dữ liệu}
+\section{Tiền xử lý dữ liệu}
 
-\subparagraph{Làm sạch câu:}
-Quá trình tiền xử lí dữ liệu trong mô hình gán nhãn từ loại (POS Tagging) được thực hiện nhằm chuẩn hóa và loại bỏ nhiễu trong tập dữ liệu gốc. Cụ thể, dữ liệu huấn luyện và kiểm thử ban đầu được lấy từ các tệp văn bản \texttt{.txt}, trong đó mỗi câu được biểu diễn bởi các cặp \texttt{từ/nhãn}. Tuy nhiên, do sai lệch định dạng trong quá trình thu thập, một số token có thể chứa lỗi ký tự hoặc bị gộp sai.  
+\subparagraph{Làm sạch dữ liệu:}
+Quá trình tiền xử lý dữ liệu trong mô hình gán nhãn từ loại (POS Tagging) được thực hiện nhằm chuẩn hóa và loại bỏ nhiễu trong tập dữ liệu gốc. Cụ thể, dữ liệu huấn luyện và kiểm thử ban đầu được lấy từ các tập tin văn bản thuần (\texttt{.txt}), trong đó mỗi câu được biểu diễn bởi các cặp \texttt{từ/nhãn}. Tuy nhiên, do sai lệch định dạng trong quá trình thu thập, một số token có thể chứa lỗi ký tự hoặc bị gộp sai.  
 
 Các hàm xử lý được xây dựng để giải quyết các vấn đề này, bao gồm:
 \begin{itemize}
     \item Chuẩn hóa ký tự phân tách \texttt{/} giữa từ và nhãn, loại bỏ các ký tự thừa hoặc lỗi định dạng.
-    \item Phát hiện và tách các token bị dính, ví dụ \texttt{-/-3/V} được tách thành các thành phần hợp lệ.
+    \item Phát hiện và tách các token bị dính liền, ví dụ \texttt{-/-3/V} được tách thành các thành phần hợp lệ.
     \item Loại bỏ các token rỗng, ký tự đặc biệt và dòng trống.
 \end{itemize}
-Kết quả thu được là các câu sạch, trong đó mỗi từ có dạng chuẩn \texttt{"từ/nhãn"}, sẵn sàng cho bước xử lí tiếp theo.
+Kết quả thu được là các câu sạch, trong đó mỗi từ có dạng chuẩn \texttt{"từ/nhãn"}, sẵn sàng cho bước xử lý tiếp theo.
 
 \subparagraph{Tách từ và nhãn:}
 Sau khi hoàn tất quá trình làm sạch, mỗi token được tách thành hai thành phần riêng biệt: từ (token) và nhãn từ loại (POS tag) (Các token dạng từ ghép có các từ được nối với nhau bởi dấu "\_" sẽ được thay thế bằng khoảng trắng). Cụ thể, mô hình xử lí các cặp \texttt{"từ/nhãn"} để tạo thành hai danh sách song song \texttt{tokens} và \texttt{tags}, đảm bảo tính tương ứng 1–1 giữa từ và nhãn.  
@@ -31,7 +31,7 @@ Dữ liệu sau khi tách được lưu trữ dưới định dạng \texttt{JSO
 
 \section{Trích xuất đặc trưng (PhoBERT)}
 
-Sau khi dữ liệu được tiền xử lí và tách thành hai danh sách song song gồm các từ (\texttt{tokens}) và nhãn từ loại (\texttt{tags}), bước tiếp theo là mã hoá các câu bằng mô hình PhoBERT để trích xuất đặc trưng ngữ nghĩa phục vụ huấn luyện.  
+Sau khi dữ liệu được tiền xử lý và tách thành hai danh sách song song gồm các từ (\texttt{tokens}) và nhãn từ loại (\texttt{tags}), bước tiếp theo là mã hóa các câu bằng mô hình PhoBERT để trích xuất đặc trưng ngữ nghĩa phục vụ huấn luyện.  
 
 \subparagraph{Mã hoá dữ liệu đầu vào:}
 Mô hình PhoBERT được nạp thông qua thư viện \texttt{transformers} của HuggingFace, với thành phần \texttt{AutoTokenizer} dùng để mã hoá câu thành các chỉ số số học (\texttt{input\_ids}) tương ứng với các token. Do PhoBERT sử dụng cơ chế mã hoá \textit{SentencePiece}, mỗi từ có thể được chia thành nhiều \textit{subword}; do đó, quá trình mã hoá phải duy trì ánh xạ giữa các subword và nhãn từ loại gốc.  
