@@ -1,94 +1,56 @@
 @echo off
-REM Auto-compile LaTeX file - Check every 10 seconds for changes
-REM Chạy: auto_compile.bat từ thư mục chứa main.tex
-
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 echo.
 echo ========================================
-echo   AUTO COMPILE LaTeX - Smart Monitor
+echo   AUTO COMPILE LaTeX
 echo ========================================
 echo.
-echo Compile folder: %cd%
-echo Checking for changes every 10 seconds...
-echo Press Ctrl+C to stop
+echo Monitoring all .tex and .bib files...
+echo Press Ctrl+C to STOP
 echo.
 
-REM Initialize previous modification times
-set "PREV_MAIN_TIME=0"
-set "PREV_BIB_TIME=0"
+set "PREV_HASH=first_run"
 
 :monitor_loop
-REM Wait 10 seconds
-timeout /t 10 /nobreak > nul
-
-REM Get current file modification times
-for /f %%A in ('powershell -NoProfile -Command "[int64](Get-Item main.tex).LastWriteTime.Ticks"') do (
-    set "CURR_MAIN_TIME=%%A"
+REM Get current hash of all .tex and .bib files using PowerShell
+for /f "delims=" %%H in ('powershell -NoProfile -Command "$files = Get-ChildItem -Recurse -Include *.tex,*.bib -ErrorAction SilentlyContinue; ($files | ForEach-Object { $_.LastWriteTime.Ticks }) -join ','"') do (
+    set "CURR_HASH=%%H"
 )
 
-for /f %%A in ('powershell -NoProfile -Command "[int64](Get-Item thesis.bib).LastWriteTime.Ticks"') do (
-    set "CURR_BIB_TIME=%%A"
-)
-
-REM Check if any file has changed
-set "FILES_CHANGED=0"
-
-if !PREV_MAIN_TIME! equ 0 (
-    set "FILES_CHANGED=1"
-) else (
-    if not !PREV_MAIN_TIME! equ !CURR_MAIN_TIME! (
-        set "FILES_CHANGED=1"
-    )
-    if not !PREV_BIB_TIME! equ !CURR_BIB_TIME! (
-        set "FILES_CHANGED=1"
-    )
-)
-
-REM If files changed, compile
-if !FILES_CHANGED! equ 1 (
+REM Compare hashes
+if "!PREV_HASH!"=="first_run" (
+    echo [%date% %time%] First run - setting baseline...
+    set "PREV_HASH=!CURR_HASH!"
+) else if not "!CURR_HASH!"=="!PREV_HASH!" (
     echo.
-    echo [%date% %time%] Files changed - Compiling...
-    echo.
-
-    REM Run pdflatex compilation
+    echo [%date% %time%] Files changed - waiting 3 seconds...
+    timeout /t 3 /nobreak > nul
+    
+    echo [%date% %time%] Compiling...
+    
     pdflatex -interaction=nonstopmode main.tex > nul 2>&1
-
-    REM Check if .bib file has been modified
-    set BIB_MODIFIED=0
-
-    if not exist main.bbl (
-        set BIB_MODIFIED=1
-    ) else (
-        for /f %%A in ('powershell -NoProfile -Command "if((Get-Item thesis.bib).LastWriteTime -gt (Get-Item main.bbl).LastWriteTime) {echo 1} else {echo 0}"') do (
-            set BIB_MODIFIED=%%A
-        )
-    )
-
-    REM Run biber only if .bib file has changed
-    if !BIB_MODIFIED! equ 1 (
-        echo [%date% %time%] Bibliography updated - running biber...
-        biber main > nul 2>&1
-        
-        REM Run pdflatex again to update references
-        pdflatex -interaction=nonstopmode main.tex > nul 2>&1
-    ) else (
-        echo [%date% %time%] Bibliography unchanged - skipped biber
-    )
-
-    REM Check if PDF was created successfully
+    biber main > nul 2>&1
+    pdflatex -interaction=nonstopmode main.tex > nul 2>&1
+    
     if exist main.pdf (
-        echo [%date% %time%] ✓ Compile successful - main.pdf updated
+        echo [%date% %time%] Compile successful
     ) else (
-        echo [%date% %time%] ✗ Compile failed
+        echo [%date% %time%] Compile failed
+    )
+    
+    REM Update hash after compile
+    for /f "delims=" %%H in ('powershell -NoProfile -Command "$files = Get-ChildItem -Recurse -Include *.tex,*.bib -ErrorAction SilentlyContinue; ($files | ForEach-Object { $_.LastWriteTime.Ticks }) -join ','"') do (
+        set "PREV_HASH=%%H"
     )
 ) else (
-    echo [%date% %time%] No changes detected
+    echo [%date% %time%] No changes
 )
 
-REM Update previous times
-set "PREV_MAIN_TIME=!CURR_MAIN_TIME!"
-set "PREV_BIB_TIME=!CURR_BIB_TIME!"
-
+timeout /t 3 /nobreak > nul
 goto monitor_loop
+
+
+
+
