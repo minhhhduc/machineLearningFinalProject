@@ -376,7 +376,7 @@ Một số dạng hàm mất mát:
     \item MSE (dành cho bài toán hồi quy):
     $$J_0(W, b) = \frac{1}{N}\sum_{n=1}^N||y_n - y_{pred}||_2^2$$
     \item Cross-Entropy (dành cho bài toán phân loại)
-    $$J_0(W, b) = -\sum_{n=1}^N\left(y_nln(a_n^{(l)}) + (1 - y_n)ln(1 - a_n^{(l)})\right)$$
+    $$J_0(W, b) = -\sum_{n=1}^N\left[y_nln\left(y_{pred}\right)\right]$$
 \end{itemize}
 
 \textit{Giải thích:}  
@@ -505,3 +505,34 @@ $$
 
 \textit{Giải thích:}  
 Đây là công thức tổng quát cho lan truyền ngược: sai số tại một neuron bằng tích giữa tổng có trọng số của sai số lớp sau và đạo hàm của hàm kích hoạt tại điểm đó. Công thức này là cốt lõi của quá trình huấn luyện MLP thông qua thuật toán Backpropagation.
+
+\subsection{K-Nearest Neighbor (KNN)}
+K-Nearest Neighbor (KNN) là một thuật toán học máy đơn giản nhưng hiệu quả, thường được sử dụng cho các bài toán phân loại và hồi quy. 
+Ý tưởng chính của KNN là dựa vào sự tương đồng giữa các mẫu dữ liệu để đưa ra dự đoán cho một mẫu mới. Đặc biệt, KNN 
+không yêu cầu quá trình huấn luyện phức tạp, mà chỉ lưu trữ toàn bộ dữ liệu huấn luyện và có thể sử dụng chúng trực tiếp trong quá trình dự đoán.
+
+\paragraph{Hàm dự đoán của KNN:} 
+$$F(x_i, k) = \left\{   
+\begin{matrix}
+    max\limits_c\left(\left|\left\{j : j \in M\left(x_i, k\right) \cap y_j = c\right\}\right|\right)_{c=1}^C &, \text{phân loại}\\
+    \frac{1}{k}\sum_{j \in M\left(x_i, k\right)} y_j &, \text{hồi quy}
+\end{matrix}\right.
+$$
+
+Trong đó:
+\begin{itemize}
+    \item $M(x_i, k)$ là tập hợp $k$ điểm dữ liệu trong tập huấn luyện gần nhất với điểm $x_i$ theo hàm khoảng cách đã chọn.
+    \item $C$ là số lớp trong bài toán phân loại.
+\end{itemize}
+
+Một số hàm khoảng cách phổ biến:
+\begin{itemize}
+    \item Khoảng cách Euclidean:
+    $$d(x_i, x_j) = ||x_i - x_j||_2 = \sqrt{\sum_{l=1}^d (x_{i,l} - x_{j,l})^2}$$
+    \item Khoảng cách Manhattan:
+    $$d(x_i, x_j) = ||x_i - x_j||_1 = \sum_{l=1}^d |x_{i,l} - x_{j,l}|$$
+    \item Khoảng cách Minkowski:
+    $$d(x_i, x_j) = \left(\sum_{l=1}^d |x_{i,l} - x_{j,l}|^p\right)^{1/p}$$
+\end{itemize}
+\textit{Giải thích:}  
+KNN sử dụng các hàm khoảng cách để đo lường sự tương đồng giữa các điểm
