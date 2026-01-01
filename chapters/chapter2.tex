@@ -35,7 +35,97 @@ Tùy thuộc vào loại bài toán, có hai hướng trích xuất đặc trưn
 % \subsection{LDA}
 
 \newpage
-\section{Các mô hình}
+\section{Các phương pháp giảm chiều dữ liệu}
+Giảm chiều dữ liệu (Dimensionality Reduction)~\cite{dimensionality_reduction} là quá trình biến đổi dữ liệu từ không gian có số chiều cao sang không gian có số chiều thấp hơn, đồng thời vẫn bảo toàn các đặc trưng quan trọng của dữ liệu gốc. Quá trình này có vai trò quan trọng trong việc giảm thiểu độ phức tạp của mô hình, loại bỏ nhiễu, giảm chi phí tính toán và cải thiện hiệu suất của các thuật toán học máy. Trong phạm vi nghiên cứu này, hai phương pháp giảm chiều phổ biến được sử dụng là PCA và LDA.
+
+\subsection{Principal Component Analysis (PCA)}
+Principal Component Analysis (PCA)~\cite{PCA_original, PCA_tutorial} là một kỹ thuật giảm chiều dữ liệu không giám sát (unsupervised) được sử dụng rộng rãi trong học máy và thống kê. Mục tiêu chính của PCA là biến đổi dữ liệu gốc thành một không gian mới với số chiều thấp hơn, đồng thời bảo toàn tối đa lượng thông tin (phương sai) của dữ liệu ban đầu.
+
+Giả sử cho trước một tập dữ liệu $X \in \mathbb{R}^{N \times d}$, mục tiêu là biến đổi tập dữ liệu này thành $X' \in \mathbb{R}^{N \times d'}$ với $d' < d$ sao cho lượng thông tin được bảo toàn là lớn nhất.
+
+\paragraph {Các bước thực hiện PCA bao gồm:}
+
+\textbf{Bước 1: Chuẩn hóa dữ liệu.} Đưa tâm gốc về tâm của dữ liệu bằng cách trừ đi giá trị trung bình:
+$$
+    X := X - \boldsymbol{1}^{N\times d}\operatorname{diag}(\mu)
+$$
+
+trong đó $\mu = \frac{1}{N}\sum_{i=1}^N x_i$ là vector trung bình của dữ liệu.
+
+\textbf{Bước 2: Xác định phép chiếu.} Mỗi điểm dữ liệu được chiếu lên không gian mới:
+$$
+    x_i' = x_iW
+$$
+
+\textbf{Bước 3: Tối đa hóa phương sai.} Phương sai của dữ liệu khi chiếu lên trục $w$ được tính như sau:
+$$
+    Var(x_i') = Var(x_iW) = \frac{1}{N}\sum_{i=1}^N (x_iw) ^2 = w^T \left(\frac{1}{N}\sum_{i=1}^N x_i^Tx_i\right) w = w^T \Sigma w
+$$
+
+ta cần: 
+\[
+    \underset{\text{s.t. } w^T w = 1}{\text{maximize}} \quad w^T \Sigma w
+\]
+
+sử dụng phương pháp nhân tử Lagrange:
+\[
+    L(w, \lambda) = w^T \Sigma w - \lambda (w^T w - 1)
+\]
+đạo hàm theo $w$ và cho bằng 0:
+\[
+    \frac{\partial L(w, \lambda)}{\partial w} = 2\Sigma w - 2\lambda w = 0
+\]
+từ đó ta có:
+\[
+    \Sigma w = \lambda w
+\]
+Kết quả này cho thấy các vector $w$ tối ưu chính là các vector riêng (eigenvector) của ma trận hiệp phương sai $\Sigma$, với các giá trị riêng (eigenvalue) tương ứng là $\lambda$. Để giảm chiều dữ liệu từ $d$ xuống $d'$, ta chọn $d'$ vector riêng tương ứng với $d'$ giá trị riêng lớn nhất để tạo thành ma trận chuyển đổi $W \in \mathbb{R}^{d \times d'}$.
+
+\textbf{Tóm tắt quy trình PCA:}
+\begin{enumerate}
+    \item Chuẩn hóa dữ liệu: Đưa tâm gốc về tâm của dữ liệu.
+    \item Tính ma trận hiệp phương sai $\Sigma$ của dữ liệu.
+    \item Tính các vector riêng và giá trị riêng của ma trận hiệp phương sai.
+    \item Chọn $d'$ vector riêng tương ứng với $d'$ giá trị riêng lớn nhất để tạo thành ma trận chuyển đổi $W$.
+    \item Biến đổi dữ liệu gốc sang không gian mới bằng cách nhân với ma trận chuyển đổi: $X' = XW$.
+\end{enumerate}
+
+\subsection{Linear Discriminant Analysis (LDA)}
+Linear Discriminant Analysis (LDA)~\cite{LDA_original, LDA_tutorial} là một kỹ thuật giảm chiều dữ liệu có giám sát (supervised), được sử dụng để tìm không gian chiếu tối ưu nhằm tối đa hóa khả năng phân biệt giữa các lớp trong dữ liệu. Khác với PCA chỉ quan tâm đến phương sai tổng thể, LDA hướng đến việc tối đa hóa khoảng cách giữa các lớp (between-class variance) đồng thời tối thiểu hóa khoảng cách trong nội bộ mỗi lớp (within-class variance).
+
+Giả sử cho trước tập dữ liệu $X \in \mathbb{R}^{N \times d}$ với $C$ lớp khác nhau. Các đại lượng cần thiết được định nghĩa như sau:  
+\begin{itemize}
+    \item $\mu$: vector trung bình toàn bộ dữ liệu.
+    \item $\mu_k$: vector trung bình của lớp $k$.
+    \item $N_k$: số lượng mẫu trong lớp $k$.
+\end{itemize}
+
+\textbf{Ma trận phân tán giữa các lớp} (between-class scatter matrix) $S_B$ đo lường độ phân tán giữa các tâm lớp:
+$$
+    S_B = \sum_{k=1}^C N_k (\mu_k - \mu)(\mu_k - \mu)^T
+$$
+
+\textbf{Ma trận phân tán trong lớp} (within-class scatter matrix) $S_W$ đo lường độ phân tán của dữ liệu trong mỗi lớp:
+$$
+    S_W = \sum_{k=1}^C \sum_{x_i \in \text{class } k} (x_i - \mu_k)(x_i - \mu_k)^T
+$$
+
+\textbf{Bài toán tối ưu:} Mục tiêu của LDA là tìm ma trận chiếu $W$ sao cho tỉ số giữa phương sai giữa các lớp và phương sai trong lớp được tối đa hóa (tiêu chí Fisher):
+$$
+    \underset{W}{\text{maximize}} \quad J(W) = \frac{|W^T S_B W|}{|W^T S_W W|}
+$$
+
+\textbf{Nghiệm của bài toán:} Theo~\cite{LDA_tutorial, fisher_criterion}, bài toán tối ưu trên tương đương với việc giải bài toán trị riêng tổng quát:
+$$
+    S_W^{-1} S_B w = \lambda w
+$$
+
+Các vector riêng $w$ tương ứng với $d'$ giá trị riêng $\lambda$ lớn nhất được chọn để tạo thành ma trận chuyển đổi $W \in \mathbb{R}^{d \times d'}$. Dữ liệu gốc được chiếu sang không gian mới bằng: $X' = XW$.
+
+\textbf{Lưu ý:} Số chiều tối đa mà LDA có thể giảm xuống là $\min(d, C-1)$, do hạng của ma trận $S_B$ tối đa là $C-1$~\cite{LDA_tutorial}.
+
+\newpage
+\section{Các mô hình học máy}
 Sau khi trích xuất đặc trưng từ văn bản bằng mô hình PhoBERT, các vector biểu diễn thu được sẽ được sử dụng làm đầu vào cho các mô hình học máy khác nhau nhằm thực hiện nhiệm vụ phân loại. Trong bài tiểu luận này, ba mô hình được lựa chọn bao gồm: Naive Bayes, Softmax Regression, Multi-Layer Perceptron. Mỗi mô hình có những đặc điểm riêng trong cách học và biểu diễn ranh giới phân lớp, được trình bày chi tiết dưới đây.
 
 \subsection{Naive Bayes}
@@ -431,7 +521,7 @@ $$
 \textit{Giải thích:}  
 $e_i^{(l)}$ được gọi là \textit{sai số cục bộ} (local error) tại nút thứ $i$ của lớp $l$, phản ánh mức độ đóng góp của nút đó vào tổng sai số của mô hình.
 
-\subparagraph{FeedForward:} là quá trình tính đầu ra theo chiều tiến, từ đầu vào $x$ đến đầu ra $y_{pred}$:
+\subparagraph{Feedforward:} là quá trình tính đầu ra theo chiều tiến, từ đầu vào $x$ đến đầu ra $y_{pred}$:
 $$
 \begin{matrix}
     a^{(0)} &=& x\\
@@ -507,32 +597,49 @@ $$
 Đây là công thức tổng quát cho lan truyền ngược: sai số tại một neuron bằng tích giữa tổng có trọng số của sai số lớp sau và đạo hàm của hàm kích hoạt tại điểm đó. Công thức này là cốt lõi của quá trình huấn luyện MLP thông qua thuật toán Backpropagation.
 
 \subsection{K-Nearest Neighbor (KNN)}
-K-Nearest Neighbor (KNN) là một thuật toán học máy đơn giản nhưng hiệu quả, thường được sử dụng cho các bài toán phân loại và hồi quy. 
-Ý tưởng chính của KNN là dựa vào sự tương đồng giữa các mẫu dữ liệu để đưa ra dự đoán cho một mẫu mới. Đặc biệt, KNN 
-không yêu cầu quá trình huấn luyện phức tạp, mà chỉ lưu trữ toàn bộ dữ liệu huấn luyện và có thể sử dụng chúng trực tiếp trong quá trình dự đoán.
+K-Nearest Neighbor (KNN)~\cite{KNN_original, KNN_tutorial} là một thuật toán học máy phi tham số (non-parametric) và dựa trên thể hiện (instance-based learning), được sử dụng rộng rãi cho các bài toán phân loại và hồi quy. Nguyên lý cơ bản của KNN là dựa vào độ tương đồng (similarity) giữa các mẫu dữ liệu trong không gian đặc trưng để đưa ra dự đoán cho một mẫu mới.
 
-\paragraph{Hàm dự đoán của KNN:} 
+Một đặc điểm quan trọng của KNN là thuật toán này thuộc loại ``lazy learning'' --- không yêu cầu quá trình huấn luyện tường minh mà chỉ lưu trữ toàn bộ tập dữ liệu huấn luyện và sử dụng trực tiếp trong giai đoạn dự đoán.
+
+\paragraph{Quy tắc dự đoán:} Cho một điểm dữ liệu mới $x_i$, thuật toán KNN thực hiện dự đoán dựa trên $k$ điểm láng giềng gần nhất:
 $$F(x_i, k) = \left\{   
 \begin{matrix}
-    max\limits_c\left(\left|\left\{j : j \in M\left(x_i, k\right) \cap y_j = c\right\}\right|\right)_{c=1}^C &, \text{phân loại}\\
-    \frac{1}{k}\sum_{j \in M\left(x_i, k\right)} y_j &, \text{hồi quy}
+    \underset{c \in \{1,\ldots,C\}}{\arg\max}\left|\left\{j : j \in \mathcal{N}_k(x_i) \land y_j = c\right\}\right| &, \text{bài toán phân loại}\\
+    \frac{1}{k}\sum_{j \in \mathcal{N}_k(x_i)} y_j &, \text{bài toán hồi quy}
 \end{matrix}\right.
 $$
 
 Trong đó:
 \begin{itemize}
-    \item $M(x_i, k)$ là tập hợp $k$ điểm dữ liệu trong tập huấn luyện gần nhất với điểm $x_i$ theo hàm khoảng cách đã chọn.
-    \item $C$ là số lớp trong bài toán phân loại.
+    \item $\mathcal{N}_k(x_i)$ là tập hợp chỉ số của $k$ điểm dữ liệu trong tập huấn luyện có khoảng cách gần nhất với điểm $x_i$.
+    \item $C$ là số lượng lớp trong bài toán phân loại.
+    \item Với bài toán phân loại, nhãn được gán theo nguyên tắc đa số phiếu (majority voting).
+    \item Với bài toán hồi quy, giá trị dự đoán là trung bình cộng của các giá trị đầu ra của $k$ láng giềng.
 \end{itemize}
 
-Một số hàm khoảng cách phổ biến:
+\paragraph{Các độ đo khoảng cách phổ biến:} Việc lựa chọn hàm khoảng cách (distance metric) có ảnh hưởng quan trọng đến hiệu suất của thuật toán KNN~\cite{distance_metrics}.
+
 \begin{itemize}
-    \item Khoảng cách Euclidean:
-    $$d(x_i, x_j) = ||x_i - x_j||_2 = \sqrt{\sum_{l=1}^d (x_{i,l} - x_{j,l})^2}$$
-    \item Khoảng cách Manhattan:
-    $$d(x_i, x_j) = ||x_i - x_j||_1 = \sum_{l=1}^d |x_{i,l} - x_{j,l}|$$
-    \item Khoảng cách Minkowski:
+    \item \textbf{Khoảng cách Euclidean} (chuẩn $L_2$):
+    $$d(x_i, x_j) = \|x_i - x_j\|_2 = \sqrt{\sum_{l=1}^d (x_{i,l} - x_{j,l})^2}$$
+    
+    \item \textbf{Khoảng cách Manhattan} (chuẩn $L_1$):
+    $$d(x_i, x_j) = \|x_i - x_j\|_1 = \sum_{l=1}^d |x_{i,l} - x_{j,l}|$$
+    
+    \item \textbf{Khoảng cách Minkowski} (tổng quát hóa của Euclidean và Manhattan):
     $$d(x_i, x_j) = \left(\sum_{l=1}^d |x_{i,l} - x_{j,l}|^p\right)^{1/p}$$
+    trong đó $p \geq 1$ là tham số. Khi $p=1$ ta được khoảng cách Manhattan, khi $p=2$ ta được khoảng cách Euclidean.
 \end{itemize}
-\textit{Giải thích:}  
-KNN sử dụng các hàm khoảng cách để đo lường sự tương đồng giữa các điểm
+
+\paragraph{Lựa chọn tham số $k$:} Giá trị $k$ là một siêu tham số (hyperparameter) quan trọng của thuật toán:
+\begin{itemize}
+    \item Nếu $k$ quá nhỏ: mô hình nhạy cảm với nhiễu, dễ bị overfitting.
+    \item Nếu $k$ quá lớn: ranh giới quyết định trở nên mờ, dễ bị underfitting.
+    \item Trong thực tế, $k$ thường được chọn thông qua cross-validation.
+\end{itemize}
+
+\paragraph{Ưu điểm và hạn chế:}
+\begin{itemize}
+    \item \textbf{Ưu điểm:} Đơn giản, dễ hiểu, không cần giả định về phân phối dữ liệu, hiệu quả với dữ liệu có ranh giới quyết định phức tạp.
+    \item \textbf{Hạn chế:} Chi phí tính toán cao khi dự đoán ($O(Nd)$ cho mỗi mẫu), nhạy cảm với chiều dữ liệu cao (curse of dimensionality), cần chuẩn hóa đặc trưng.
+\end{itemize}
