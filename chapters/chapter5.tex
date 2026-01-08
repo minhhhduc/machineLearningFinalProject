@@ -1,36 +1,63 @@
-\chapter{Tổng kết}
-\section{Kết quả đạt được}
-Trong quá trình nghiên cứu và thực nghiệm, nhóm đã đạt được các kết quả chính sau:
+\chapter{Tổng kết và Hướng phát triển}
+
+\section{Tổng kết các kết quả nghiên cứu}
+
+Nghiên cứu này đã xây dựng và đánh giá một quy trình gán nhãn từ loại (POS Tagging) toàn diện cho tiếng Việt, tận dụng sức mạnh của mô hình ngôn ngữ tiền huấn luyện PhoBERT kết hợp với các kỹ thuật học máy cổ điển và hiện đại. Dựa trên các thực nghiệm định lượng trên tập dữ liệu 9.511 câu, báo cáo rút ra các kết luận khoa học quan trọng sau:
+
+\subsection{Về bài toán Phân loại (Classification)}
+
 \begin{itemize}
-    \item \textbf{Tiền xử lý dữ liệu:} Dữ liệu gồm 9.511 câu, với tổng cộng hơn 200.000 token. Các bước làm sạch và chuẩn hóa được thực hiện nhằm đảm bảo tính nhất quán về định dạng và nhãn.
-    \item \textbf{Trích rút đặc trưng:} Dữ liệu được mã hóa và trích đặc trưng bằng mô hình PhoBERT-base (VinAI). Ngoài ra, các kỹ thuật giảm chiều PCA và LDA cũng được áp dụng để đánh giá ảnh hưởng đến hiệu năng mô hình.
-    \item \textbf{Phân tích dữ liệu:} Phân bố nhãn không đồng đều, trong đó các nhãn phổ biến nhất là \textit{N} (23,7\%), \textit{V} (19,6\%) và \textit{PUNCT} (14,8\%). Độ dài trung bình của câu là khoảng 23 từ.
-    \item \textbf{Kết quả mô hình:} Các thí nghiệm đã chỉ ra sự khác biệt rõ rệt và các phát hiện quan trọng:
+    \item \textbf{Hiệu quả của trích xuất đặc trưng PhoBERT:} 
+    Kết quả thực nghiệm khẳng định vector đặc trưng 768 chiều từ PhoBERT chứa đựng lượng thông tin ngữ nghĩa và cú pháp phong phú, cho phép các mô hình đơn giản (như Softmax Regression) đạt độ chính xác trên 90\% mà không cần tinh chỉnh (fine-tuning) phức tạp.
+
+    \item \textbf{Sự đánh đổi giữa Độ chính xác và Độ cân bằng (Accuracy vs. Fairness):}
+    Nghiên cứu chỉ ra một sự đánh đổi rõ rệt phụ thuộc vào chiến lược huấn luyện:
     \begin{itemize}
-        \item \textbf{Hiệu suất cao nhất:} Mô hình Multi-Layer Perceptron trên 768 chiều (gốc) đạt hiệu suất tổng thể cao nhất (Accuracy 0.92, F1-Weighted 0.92 ở tỉ lệ 80/20). Mô hình Softmax Regression theo sát với Accuracy 0.91.
-        
-        \item \textbf{Ảnh hưởng nghịch lý của PCA:} Giảm chiều dữ liệu bằng PCA có tác động trái ngược nhau. Nó \textit{cải thiện đáng kể} hiệu suất của Naive Bayes (Accuracy tăng từ 0.68 lên 0.81 tại 256D), nhưng lại \textit{làm suy giảm} hiệu suất của cả Softmax Regression và Multi-Layer Perceptron.
-        
-        \item \textbf{Xử lý mất cân bằng:} Mặc dù Multi-Layer Perceptron có Accuracy tổng thể cao nhất, mô hình Softmax Regression (768D) lại là mô hình cân bằng nhất, đạt F1-Macro 0.77 (so với 0.68 của Multi-Layer Perception). Phân tích chi tiết (Bảng \ref{tab:f1_per_label_alphabetical}) cho thấy Multi-Layer Perceptron không hiệu quả (F1=0.00) trên các lớp hiếm (B, I, Y), trong khi Softmax Regression vẫn duy trì khả năng nhận diện tốt (ví dụ: F1=0.60 trên lớp 'B', F1=0.71 trên lớp 'S').
+        \item \textbf{Tối ưu hóa Accuracy:} Mô hình \textbf{MLP Standard} (không trọng số) đạt hiệu suất cao nhất (Accuracy 0.92) nhờ việc tối ưu hóa tốt cho các lớp phổ biến (N, V).
+        \item \textbf{Tối ưu hóa Độ bao phủ (Macro F1):} Chiến lược \textbf{Phạt trọng số (Weighted Loss)} là bắt buộc để xử lý dữ liệu mất cân bằng. Mô hình \textbf{MLP Weighted} và \textbf{Softmax Regression Weighted} đã "hồi sinh" khả năng nhận diện các lớp hiếm (như B, I, S) từ mức F1=0.00 lên mức khả quan (0.60 - 0.86), chấp nhận hy sinh một lượng nhỏ Accuracy tổng thể.
     \end{itemize}
-    
-    \item \textbf{Đánh giá tổng quát:} Các kết quả khẳng định đặc trưng trích xuất từ PhoBERT (768D) là đầu vào chất lượng rất cao (cho phép Softmax Regression và Multi-Layer Perceptron đạt Accuracy >91\%). Tuy nhiên, nghiên cứu chỉ ra sự đánh đổi (trade-off) quan trọng:
+
+    \item \textbf{Nghịch lý về chiều dữ liệu (Dimensionality Paradox):}
+    Tác động của giảm chiều dữ liệu (PCA) là trái ngược giữa các mô hình:
     \begin{itemize}
-        \item \textbf{Đánh đổi 1 (Mô hình vs Đặc trưng):} Các mô hình phức tạp (Multi-Layer Perceptron, Softmax Regression) hoạt động tốt nhất trên đặc trưng gốc 768 chiều. Mô hình xác suất đơn giản (Naive Bayes) yêu cầu giảm chiều (PCA) để hoạt động hiệu quả (Accuracy 0.81 tại 256 chiều).
-        \item \textbf{Đánh đổi 2 (Accuracy vs Cân bằng):} Mô hình Multi-Layer Perceptron tối ưu hóa tốt hơn cho Accuracy tổng thể (0.92), nhưng bằng cách "bỏ qua" các lớp thiểu số. Mô hình Softmax Regression cho thấy khả năng tổng quát hóa cân bằng và đáng tin cậy hơn (F1-Macro 0.77) khi xử lý dữ liệu mất cân bằng.
+        \item Là yếu tố \textit{sống còn} đối với \textbf{Naive Bayes}: Tăng Accuracy từ 0.68 lên 0.81 (tại 256-430 chiều) nhờ khử tương quan biến.
+        \item Là yếu tố \textit{gây hại} đối với \textbf{SR và MLP}: Làm giảm hiệu suất do mất mát thông tin ngữ nghĩa tinh tế trong các chiều phương sai thấp.
     \end{itemize}
 \end{itemize}
 
-\section{Hạn chế và hướng phát triển}
+\subsection{Về bài toán Hồi quy (Regression)}
+
+Nghiên cứu đã mở rộng bài toán sang hướng dự đoán độ tin cậy (xác suất) của nhãn từ loại, đạt được những kết quả khả quan:
+
 \begin{itemize}
-    \item Chưa tiến hành đánh giá trên nhiều mô hình ngôn ngữ khác như \textit{viBERT}, \textit{XLM-R} hay các biến thể nhẹ hơn của PhoBERT.
-    \item Việc giảm chiều dữ liệu chưa kết hợp với kỹ thuật chọn đặc trưng tối ưu hoặc điều chỉnh siêu tham số tự động.
-    \item Chưa thử nghiệm trên tập dữ liệu cực lớn hoặc đa miền để đánh giá khả năng tổng quát hoá.
+    \item \textbf{Khả năng mô hình hóa độ bất định:} Việc chuyển đổi bài toán là hoàn toàn khả thi. Mô hình \textbf{MLP Regression} trên không gian 768 chiều đạt hệ số xác định $R^2 \approx 0.99$ và sai số MSE cực thấp (0.002), chứng tỏ mạng nơ-ron có thể xấp xỉ gần như hoàn hảo hàm phân phối xác suất của bài toán phân loại.
+    \item \textbf{Ưu thế của mô hình tham số hóa:} Trong không gian vector ngữ nghĩa cao chiều, mô hình tham số hóa (MLP) vượt trội hoàn toàn so với mô hình phi tham số dựa trên khoảng cách (KNN), ngay cả khi KNN đã được tối ưu hóa tham số $K$ và giảm chiều dữ liệu.
 \end{itemize}
 
-\section{Kết luận}
-Kết quả thực nghiệm cho thấy việc áp dụng PhoBERT trong bài toán gán nhãn từ loại tiếng Việt đạt hiệu năng rất cao, với độ chính xác tổng thể vượt 91\% (với Multi-Layer Perceptron và Softmax Regression). 
+\subsection{Về cấu trúc dữ liệu (Data Insight)}
+Thông qua các kỹ thuật trực quan hóa (PCA, LDA) và phân cụm (K-Means), nghiên cứu phát hiện ra rằng PhoBERT mã hóa thông tin từ loại theo cấu trúc hình học rõ ràng:
+\begin{itemize}
+    \item \textbf{Dấu câu (Punctuation)} là lớp được tách biệt mạnh mẽ nhất trong không gian vector.
+    \item Tồn tại sự phân tầng ngữ nghĩa tự nhiên (Latent Stratification) giữa nhóm Danh từ và nhóm Động từ/Tính từ mà các thuật toán không giám sát như K-Means có thể tự động phát hiện.
+\end{itemize}
 
-Báo cáo đã chỉ ra một phát hiện quan trọng: việc giảm chiều (PCA) là \textit{có hại} cho các mô hình phức tạp như Multi-Layer Perceptron và Softmax Regression (vốn hoạt động tốt nhất ở 768D) nhưng lại \textit{thiết yếu} cho mô hình Naive Bayes (tăng Accuracy từ 0.68 lên 0.81).
+\section{Hạn chế của đề tài}
 
-Quan trọng hơn, báo cáo nhấn mạnh sự đánh đổi rõ rệt giữa Accuracy tổng thể và khả năng xử lý các lớp hiếm. Mặc dù MLP đạt Accuracy cao nhất (0.92), nó hoàn toàn thất bại trong việc nhận diện nhiều lớp thiểu số (F1=0.00). Ngược lại, Softmax Regression, dù Accuracy thấp hơn một chút (0.91), lại là mô hình cân bằng và đáng tin cậy hơn (F1-Macro 0.77), với khả năng nhận diện các lớp hiếm tốt hơn đáng kể. Điều này gợi ý rằng, đối với các bài toán mất cân bằng trong thực tế, Softmax Regression có thể là lựa chọn tổng quát hóa tốt hơn.
+Mặc dù đạt được những kết quả tích cực, nghiên cứu vẫn tồn tại một số hạn chế:
+\begin{itemize}
+    \item \textbf{Phạm vi mô hình ngôn ngữ:} Chỉ mới thử nghiệm trên PhoBERT-base, chưa đánh giá trên các biến thể khác như PhoBERT-large, XLM-RoBERTa hay ViBERT để so sánh tính hiệu quả của các kiến trúc embedding khác nhau.
+    \item \textbf{Giới hạn của phương pháp Hồi quy:} Nhãn mục tiêu (Target) của bài toán hồi quy hiện tại đang phụ thuộc vào đầu ra của mô hình Softmax Regression (Teacher-Student setup), chưa phải là độ tin cậy thực tế từ con người gán nhãn.
+    \item \textbf{Chưa tối ưu hóa tinh chỉnh (Fine-tuning):} Nghiên cứu mới chỉ dừng lại ở mức Feature Extraction (đóng băng PhoBERT). Phương pháp Fine-tuning toàn bộ mô hình (End-to-End learning) có thể mang lại kết quả cao hơn nhưng chưa được thực hiện do hạn chế về tài nguyên tính toán.
+\end{itemize}
+
+\section{Hướng phát triển}
+
+Dựa trên các kết quả và hạn chế đã nêu, các hướng nghiên cứu tiếp theo được đề xuất bao gồm:
+\begin{enumerate}
+    \item \textbf{Áp dụng các hàm mất mát chuyên sâu:} Thử nghiệm \textit{Focal Loss} thay vì Weighted Cross-Entropy để xử lý các mẫu khó (hard examples) thay vì chỉ dựa vào tần suất lớp.
+    \item \textbf{Mở rộng bài toán Hồi quy:} Sử dụng kỹ thuật \textit{Label Smoothing} hoặc \textit{Knowledge Distillation} từ các mô hình lớn hơn để tạo ra các nhãn xác suất mục tiêu chất lượng hơn cho bài toán hồi quy.
+    \item \textbf{Thực nghiệm trên miền dữ liệu mở rộng:} Đánh giá khả năng tổng quát hóa (Generalization) của mô hình Softmax Regression và MLP Weighted trên các tập dữ liệu văn bản khác miền (ví dụ: văn bản y sinh, pháp luật) để kiểm chứng độ bền vững của mô hình.
+\end{enumerate}
+
+\section{Lời kết}
+Tiểu luận đã chứng minh rằng việc kết hợp các mô hình học máy truyền thống với vector đặc trưng từ mô hình ngôn ngữ lớn là một hướng tiếp cận hiệu quả, tiết kiệm tài nguyên nhưng vẫn đạt độ chính xác cao cho bài toán xử lý tiếng Việt. Đặc biệt, việc lựa chọn chiến lược huấn luyện (có trọng số hay không) và phương pháp tiền xử lý (giảm chiều hay giữ nguyên) đóng vai trò quyết định đến hiệu năng cuối cùng, đòi hỏi sự thấu hiểu sâu sắc về bản chất của từng thuật toán và dữ liệu.

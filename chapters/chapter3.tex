@@ -44,7 +44,7 @@ PhoBERT được sử dụng như một bộ trích xuất đặc trưng ngữ n
 % PCA, LDA -> 6 để phân tích tương quan và mối liên hệ
 
 
-\section{Xây dựng và huấn luyện các mô hình}
+\section{Xây dựng và huấn luyện các mô hình phân loại}
 Dữ liệu đặc trưng sau khi trích xuất từ PhoBERT được chia thành tập huấn luyện và tập kiểm thử theo các tỉ lệ khác nhau (80/20, 70/30, 60/40) để đánh giá sự ảnh hưởng của kích thước dữ liệu đến hiệu suất mô hình. Thí nghiệm được thực hiện trên cả dữ liệu gốc (768 chiều)
 % và dữ liệu đã giảm chiều bằng PCA (xuống 256 và 64 chiều).
 
@@ -79,22 +79,168 @@ Kiến trúc được định nghĩa trong lớp \texttt{MLP} (Kế thừa từ 
     \item \begin{sloppypar} \textbf{Tối ưu hóa:} Mô hình được huấn luyện bằng thuật toán tối ưu \textbf{Adam} (\texttt{optim.Adam}) với một tốc độ học (learning rate) định trước. Hàm mất mát được sử dụng là Cross-Entropy Loss (\texttt{nn.CrossEntropyLoss}), phù hợp cho bài toán phân loại đa lớp vì nó đã bao gồm cả bước tính Softmax trên logits đầu ra.\end{sloppypar}
 \end{itemize}
 
-\section{So sánh và đánh giá kết quả}
-Hiệu suất của các mô hình được đánh giá trên tập kiểm thử thông qua các chỉ số phổ biến trong bài toán phân loại đa lớp. Với mỗi mô hình so sánh độ chính xác khi huấn luyện với cách chia bộ dữ liệu khác nhau. Với mỗi cách chia so sánh độ chính xác giữa các mô hình.
+\subsection{Kỹ thuật xử lý mất cân bằng dữ liệu: Phạt trọng số}
 
-Độ xác chính xác:
+Tập dữ liệu POS Tagging khi được phân tích nhận thấy có sự mất cân bằng nghiêm trọng giữa các lớp (ví dụ: nhãn 'N', 'V' chiếm đa số, trong khi 'I', 'Y' cực kỳ hiếm). Nếu huấn luyện theo cách thông thường, các mô hình sẽ có xu hướng thiên vị (bias) về các lớp đa số để tối ưu hóa độ chính xác tổng thể (Accuracy), dẫn đến việc bỏ qua các lớp thiểu số.
+
+Để khắc phục vấn đề này, phương pháp Phạt trọng số được áp dụng cho cả ba mô hình. Kỹ thuật này gán một trọng số $w_j$ lớn hơn cho các mẫu thuộc lớp thiểu số và trọng số nhỏ hơn cho các lớp đa số trong quá trình tính toán hàm mất mát hoặc xác suất.
+
+\subparagraph{Tính toán trọng số:}
+Trọng số cho lớp $j$ thường được tính nghịch đảo với tần suất xuất hiện của nó trong tập huấn luyện:
+\[
+w_j = \frac{N}{C \cdot N_j}
+\]
+Trong đó:
 \begin{itemize}
-    \item \textbf{Accuracy}: Tỉ lệ số lượng điểm dữ liệu được dự đoán đúng trên tổng số điểm dữ liệu.
-    \item \textbf{Precision}: Độ chính xác, đo lường tỉ lệ dự đoán đúng của một lớp trên tổng số các dự đoán cho lớp đó.
-    \item \textbf{Recall}: Độ phủ, đo lường tỉ lệ dự đoán đúng của một lớp trên tổng số các mẫu thực tế của lớp đó.
-    \item \textbf{F1-score}: Trung bình điều hòa của Precision và Recall, cung cấp một thước đo cân bằng giữa hai chỉ số này.
+    \item $N$: Tổng số mẫu trong tập huấn luyện.
+    \item $C$: Tổng số lớp (nhãn POS).
+    \item $N_j$: Số lượng mẫu thuộc lớp $j$.
 \end{itemize}
-Các chỉ số này được tính toán cho từng lớp và tính trung bình (macro avg, weighted avg) để có cái nhìn tổng quan về hiệu suất mô hình. Ngoài ra, ma trận nhầm lẫn (confusion matrix) cũng được sử dụng để trực quan hóa các lỗi dự đoán giữa các lớp.
+
+Việc áp dụng trọng số được thực hiện cụ thể cho từng mô hình như sau:
+
+\begin{itemize}
+    \item \textbf{Đối với Naive Bayes:} Các mẫu thuộc lớp thiểu số sẽ đóng góp nhiều hơn vào việc ước lượng các tham số phân phối (trung bình $\mu$ và phương sai $\sigma^2$) cũng như xác suất tiên nghiệm (priors) của lớp đó.
+    
+    \item \textbf{Đối với Softmax Regression:} Sử dụng chế độ \texttt{class\_weight='balanced'} trong thư viện Scikit-learn. Hàm mất mát Cross-Entropy được điều chỉnh thành dạng có trọng số:
+    \[
+    J(\theta) = - \sum_{n=1}^N w_{y_n} \ln P(y_n \mid x_n; \theta)
+    \]
+    Điều này buộc mô hình phải "trả giá" đắt hơn nếu dự đoán sai các lớp hiếm, từ đó nỗ lực học các đặc trưng của các lớp này kỹ hơn.
+    
+    \item \textbf{Đối với Multi-Layer Perceptron:} Trong PyTorch, một tensor trọng số $W_{loss}$ (đã được tính toán trước theo công thức trên) được truyền trực tiếp vào hàm mất mát \texttt{nn.CrossEntropyLoss(weight=W\_loss)}. Khi lan truyền ngược (backpropagation), gradient từ các mẫu lớp hiếm sẽ được khuếch đại, giúp cập nhật trọng số mạng nơ-ron mạnh mẽ hơn theo hướng nhận diện đúng các lớp này.
+\end{itemize}
+
+\subsection{So sánh và đánh giá kết quả}
+Hiệu suất của các mô hình được đánh giá trên tập kiểm thử thông qua các chỉ số phổ biến trong bài toán phân loại đa lớp. Với mỗi mô hình, độ chính xác được so sánh tương ứng với các cách chia bộ dữ liệu khác nhau. Đồng thời, với mỗi cách chia, hiệu suất giữa các mô hình cũng được đối chiếu để đánh giá tính ổn định và khả năng tổng quát hóa.
+
+Các chỉ số đánh giá chính được sử dụng bao gồm Accuracy, Precision, Recall và F1-score.
+
+\subsubsection*{Accuracy}
+Accuracy đo lường tỉ lệ các mẫu được dự đoán đúng trên tổng số mẫu trong tập kiểm thử. Công thức được định nghĩa như sau:
+\[
+\text{Accuracy} = \frac{1}{n} \sum_{i=1}^{n} \mathbb{I}(y_i = \hat{y}_i)
+\]
+trong đó:
+考虑
+\begin{itemize}
+    \item $n$ là số lượng mẫu trong tập kiểm thử,
+    \item $y_i$ là nhãn thực của mẫu thứ $i$,
+    \item $\hat{y}_i$ là nhãn dự đoán của mô hình,
+    \item $\mathbb{I}(\cdot)$ là hàm chỉ thị, nhận giá trị 1 nếu điều kiện đúng và 0 nếu sai.
+\end{itemize}
+
+\subsubsection*{Precision}
+Precision đo lường mức độ chính xác của dự đoán đối với một lớp cụ thể, được tính bằng:
+\[
+\text{Precision} = \frac{TP}{TP + FP}
+\]
+trong đó $TP$ (True Positives) là số mẫu được dự đoán đúng thuộc lớp đó, và $FP$ (False Positives) là số mẫu bị dự đoán sai vào lớp đó.
+
+\subsubsection*{Recall}
+Recall đo lường khả năng mô hình phát hiện đúng các mẫu thực sự thuộc về một lớp, được định nghĩa như sau:
+\[
+\text{Recall} = \frac{TP}{TP + FN}
+\]
+trong đó $FN$ (False Negatives) là số mẫu thuộc lớp đó nhưng bị mô hình dự đoán sai sang lớp khác.
+
+\subsubsection*{F1-score}
+F1-score là trung bình điều hòa giữa Precision và Recall, phản ánh sự cân bằng giữa độ chính xác và độ bao phủ:
+\[
+\text{F1-score} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+\]
+
+Các chỉ số trên được tính toán cho từng lớp và sau đó được tổng hợp bằng các phương pháp trung bình khác nhau:
+\begin{itemize}
+    \item \textbf{Macro average}: Trung bình không trọng số trên tất cả các lớp, phản ánh hiệu suất trên các lớp hiếm.
+    \item \textbf{Weighted average}: Trung bình có trọng số theo số lượng mẫu của mỗi lớp, phản ánh hiệu suất tổng thể trên dữ liệu mất cân bằng.
+\end{itemize}
+
+Ngoài ra, ma trận nhầm lẫn (confusion matrix) cũng được sử dụng để trực quan hóa các lỗi dự đoán giữa các lớp và phân tích hành vi của mô hình.
 
 Việc so sánh được thực hiện theo hai khía cạnh chính:
 \begin{enumerate}
     \item \textbf{So sánh giữa các mô hình}: Đánh giá hiệu suất của Naive Bayes, Softmax Regression và MLP trong cùng một điều kiện (cùng tỉ lệ chia và cùng chiều dữ liệu).
-    \item \textbf{So sánh ảnh hưởng của giảm chiều}: Đánh giá hiệu suất của mỗi mô hình trên các bộ dữ liệu có số chiều khác nhau (768, 256, và 64) để xem xét sự đánh đổi giữa hiệu suất và chi phí tính toán.
+    \item \textbf{So sánh ảnh hưởng của giảm chiều}: Đánh giá hiệu suất của mỗi mô hình trên các bộ dữ liệu có số chiều khác nhau (768, 256 và 64) để xem xét sự đánh đổi giữa hiệu suất và chi phí tính toán.
 \end{enumerate}
 
+
 \subparagraph{Mục tiêu của việc so sánh:} xác định mức độ phù hợp của mô hình để giải quyết bài toán gán nhãn từ loại. 
+
+\section{Xây dựng và huấn luyện các mô hình hồi quy}
+
+Bên cạnh cách tiếp cận truyền thống coi gán nhãn từ loại là một bài toán phân loại đa lớp, báo cáo này mở rộng theo một hướng tiếp cận thay thế: chuyển đổi bài toán phân loại sang bài toán hồi quy. Thay vì dự đoán trực tiếp nhãn rời rạc cho mỗi token, mô hình được huấn luyện để dự đoán một \textit{giá trị liên tục} phản ánh mức độ tin cậy (xác suất) token thuộc về một nhãn từ loại cụ thể.
+
+Cách tiếp cận này cho phép phân tích sâu hơn về hành vi của mô hình, đồng thời tạo điều kiện thuận lợi cho các ứng dụng yêu cầu ngưỡng xác suất linh hoạt hoặc kết hợp nhiều nguồn dự đoán trong tương lai.
+
+\subsection{Chuyển đổi bài toán phân loại sang bài toán hồi quy}
+Trong phạm vi của báo cáo này, nhóm lựa chọn tập 
+trung vào một nhãn đại diện duy nhất là 
+N (Noun -- Danh từ), do đây là lớp chiếm tỷ lệ lớn 
+và có vai trò quan trọng trong nhiều bài toán xử 
+lý ngôn ngữ tự nhiên.
+
+Quá trình chuyển đổi được thực hiện như sau:
+\begin{itemize}
+    \item Mỗi token trong tập dữ liệu được gán một nhãn nhị phân: giá trị 1 nếu token thuộc nhãn N, và giá trị 0 nếu token thuộc các nhãn còn lại.
+    \item Đầu vào của mô hình là vector đặc trưng ngữ nghĩa của token, được trích xuất từ PhoBERT với các không gian đặc trưng khác nhau: 768 chiều (gốc), 256 chiều và 64 chiều (sau khi giảm chiều bằng PCA).
+    \item Đầu ra của mô hình là một giá trị liên tục trong khoảng $[0, 1]$, biểu diễn xác suất token đó thuộc về nhãn N.
+\end{itemize}
+
+Giá trị xác suất mục tiêu được trích xuất từ mô hình phân loại Softmax Regression có sử dụng cơ chế \textit{weighted loss} để xử lý sự mất cân bằng dữ liệu. Cụ thể, xác suất của lớp N trong phân phối đầu ra của Softmax được sử dụng làm biến mục tiêu cho bài toán hồi quy.
+
+Tương tự bài toán phân loại, dữ liệu được chia thành tập huấn luyện và tập kiểm thử theo các tỉ lệ 80/20, 70/30 và 60/40 nhằm đánh giá độ ổn định của mô hình hồi quy khi thay đổi kích thước dữ liệu huấn luyện.
+
+\subsection{Mô hình K-Nearest Neighbors cho bài toán hồi quy}
+Với mỗi token cần dự đoán, KNN xác định $k$ vector đặc trưng gần nhất trong tập huấn luyện (theo khoảng cách Euclidean) và ước lượng xác suất thuộc nhãn N bằng cách lấy trung bình giá trị mục tiêu của các láng giềng này trong đó những láng giềng nằm càng gần thì ảnh hưởng càng lớn đến kết quả dự đoán.
+
+Ưu điểm của KNN trong bối cảnh này là khả năng khai thác trực tiếp cấu trúc hình học của không gian embedding PhoBERT mà không cần giả định phân phối hay huấn luyện tham số phức tạp. Tuy nhiên, nhược điểm chính là chi phí tính toán cao khi số lượng token lớn và độ nhạy với lựa chọn siêu tham số $k$ cũng như không gian đặc trưng đầu vào.
+
+\subsection{Mô hình Multi-Layer Perceptron cho bài toán hồi quy}
+Kiến trúc của mạng MLP trong bài toán hồi quy được giữ giống hoàn toàn với kiến trúc đã sử dụng trong bài toán phân loại trước đó, ngoại trừ lớp đầu ra.
+
+Cụ thể:
+\begin{itemize}
+    \item Các lớp ẩn và hàm kích hoạt ReLU được giữ nguyên để học các mối quan hệ phi tuyến giữa vector đặc trưng và xác suất mục tiêu.
+    \item Lớp đầu ra được thiết kế với một nơ-ron duy nhất và sử dụng hàm kích hoạt sigmoid nhằm đảm bảo đầu ra nằm trong khoảng $[0, 1]$.
+    \item Hàm mất mát sử dụng cho bài toán hồi quy là Mean Squared Error (MSE), phù hợp với mục tiêu dự đoán giá trị liên tục.
+\end{itemize}
+
+Mô hình MLP cho phép học một ánh xạ liên tục và trơn từ không gian embedding PhoBERT sang xác suất thuộc nhãn N, đồng thời có khả năng tổng quát hóa tốt hơn so với các phương pháp dựa trên khoảng cách thuần túy khi dữ liệu có kích thước lớn.
+
+\subsection{So sánh và đánh giá các mô hình hồi quy}
+Hiệu suất của các mô hình hồi quy được đánh giá riêng biệt và độc lập với bài toán phân loại. Mục tiêu của bài toán hồi quy là dự đoán xác suất một token thuộc về nhãn \textbf{N}, do đó các thước đo đánh giá được lựa chọn nhằm phản ánh mức độ chính xác của các giá trị dự đoán liên tục.
+
+Trong bài báo cáo này, hai chỉ số đánh giá chính được sử dụng là Mean Squared Error (MSE) và hệ số xác định $R^2$.
+
+\subsubsection*{Mean Squared Error (MSE)}
+Mean Squared Error đo lường sai số bình phương trung bình giữa giá trị xác suất dự đoán và giá trị mục tiêu. Công thức được định nghĩa như sau:
+\[
+\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+\]
+trong đó:
+\begin{itemize}
+    \item $n$ là số lượng mẫu trong tập kiểm thử,
+    \item $y_i$ là giá trị xác suất mục tiêu của mẫu thứ $i$,
+    \item $\hat{y}_i$ là giá trị xác suất dự đoán bởi mô hình hồi quy.
+\end{itemize}
+
+Giá trị MSE càng nhỏ cho thấy mô hình dự đoán xác suất càng chính xác và ổn định.
+
+\subsubsection*{Hệ số xác định ($R^2$)}
+Hệ số xác định $R^2$ phản ánh mức độ mà mô hình hồi quy giải thích được phương sai của biến mục tiêu. Chỉ số này được tính theo công thức:
+\[
+R^2 = 1 - \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{\sum_{i=1}^{n} (y_i - \bar{y})^2}
+\]
+trong đó $\bar{y}$ là giá trị trung bình của biến mục tiêu trong tập kiểm thử.
+
+Giá trị $R^2$ nằm trong khoảng $(-\infty, 1]$, trong đó giá trị càng gần 1 cho thấy mô hình có khả năng giải thích dữ liệu càng tốt. Trường hợp $R^2$ nhỏ hoặc âm cho thấy mô hình dự đoán kém hơn so với việc chỉ sử dụng giá trị trung bình của biến mục tiêu.
+
+\subsubsection*{Tiêu chí so sánh}
+Việc so sánh các mô hình hồi quy được thực hiện theo ba khía cạnh chính:
+\begin{enumerate}
+    \item \textbf{So sánh giữa các mô hình:} Đánh giá hiệu suất của KNN và MLP trong cùng không gian đặc trưng nhằm xác định mô hình phù hợp hơn cho bài toán dự đoán xác suất.
+    \item \textbf{Ảnh hưởng của số chiều đặc trưng:} Phân tích tác động của số chiều đặc trưng (768, 256 và 64) đến độ chính xác dự đoán, từ đó đánh giá sự đánh đổi giữa mức độ biểu diễn thông tin và độ phức tạp tính toán.
+    \item \textbf{Ảnh hưởng của tỉ lệ chia dữ liệu:} Đánh giá độ ổn định của các mô hình khi thay đổi tỉ lệ chia dữ liệu huấn luyện và kiểm thử (80/20, 70/30 và 60/40).
+\end{enumerate}
+

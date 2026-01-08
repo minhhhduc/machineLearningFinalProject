@@ -37,7 +37,7 @@ Bộ dữ liệu bao gồm 20 nhãn từ loại riêng biệt. Bảng \ref{tab:p
     \centering
     \caption{Thống kê phân bố các nhãn từ loại (POS Tag) trong bộ dữ liệu.}
     \label{tab:pos_tag_stats}
-    \resizebox{0.8\textwidth}{!}{% Phóng to/thu nhỏ bảng để vừa với chiều rộng
+    \resizebox{0.8\textwidth}{!}{
     \begin{tabular}{lrr | lrr}
         \toprule
         \textbf{Nhãn (Tag)} & \textbf{Số lượng} & \textbf{Tỷ lệ (\%)} & \textbf{Nhãn (Tag)} & \textbf{Số lượng} & \textbf{Tỷ lệ (\%)} \\
@@ -65,45 +65,176 @@ Sau đó, quá trình trích xuất đặc trưng bằng PhoBERT được áp d�
 Kết quả của quy trình này là 217.557 bản ghi, trong đó mỗi bản ghi là một cặp (vector, nhãn). Phần vector là một biểu diễn ngữ nghĩa có 768 chiều, được trích xuất từ tầng cuối cùng của mô hình PhoBERT, thể hiện ngữ cảnh của token đó trong câu. Phần nhãn là POS tag tương ứng với token.
 
 Như vậy, từ 9511 câu, một bộ dữ liệu dạng bảng đã được xây dựng, bao gồm 217.557 mẫu, với mỗi mẫu là một vector 768 chiều, đây là dữ liệu sẽ được dùng để huấn luyện các mô hình học máy.
-\subparagraph{Phân tích tương quan và trực quan hóa dữ liệu:}
-Bằng phương pháp giảm chiều LDA, dữ liệu được giảm từ 768 chiều xuống 6 chiều. Kết quả của quá trình này được trực quan hóa thông qua ma trận biểu đồ trong Hình~\ref{fig:lda_pair_plot}.
+
+\section{Phân tích tương quan và trực quan hóa dữ liệu}
+
+Do vector đặc trưng từ PhoBERT có số chiều lớn ($d=768$), việc trực quan hóa trực tiếp là bất khả thi. Do đó, báo cáo áp dụng hai kỹ thuật giảm chiều đại diện cho hai hướng tiếp cận khác nhau:
+\begin{enumerate}
+    \item \textbf{Principal Component Analysis (PCA):} Phương pháp giảm chiều không giám sát, tập trung vào việc bảo toàn phương sai lớn nhất của dữ liệu, giúp quan sát cấu trúc phân phối tự nhiên.
+    \item \textbf{Linear Discriminant Analysis (LDA):} Phương pháp giảm chiều có giám sát, tập trung vào việc tối đa hóa khoảng cách giữa các lớp, giúp đánh giá khả năng phân tách của dữ liệu.
+\end{enumerate}
+
+Dữ liệu được giảm xuống 6 chiều (6 thành phần chính) để thực hiện phân tích tương quan cặp (Pairwise Correlation Analysis).
+
+\subsection{Phân tích cấu trúc dữ liệu với PCA}
+
+Hình \ref{fig:pca_pair_plot} biểu diễn ma trận biểu đồ phân tán (Scatter matrix) và phân phối mật độ (Density plot) của 6 thành phần PCA đầu tiên.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{images/LDA_matrix.png} 
-    \caption{Biểu đồ quan hệ cặp của 6 thành phần LDA sau khi giảm chiều từ dữ liệu PhoBERT.}
+    \includegraphics[width=1\textwidth]{images/pca_6d.png} 
+    \caption{Biểu đồ quan hệ cặp của 6 thành phần PCA.}
+    \label{fig:pca_pair_plot}
+\end{figure}
+
+Từ biểu đồ PCA, ta có các quan sát quan trọng về tính chất thống kê của dữ liệu:
+
+\begin{itemize}
+    \item \textbf{Dạng phân phối Gaussian (Phân phối chuẩn):} 
+    Quan sát các biểu đồ mật độ trên đường chéo chính (diagonal), ta thấy hầu hết các thành phần PCA đều tuân theo phân phối có dạng hình chuông (bell-curve) khá chuẩn, tập trung quanh giá trị trung bình là 0. Điều này xác nhận giả định rằng không gian vector của PhoBERT có tính chất phân phối chuẩn đa biến. Đây chính là cơ sở lý thuyết giải thích tại sao mô hình \textbf{Gaussian Naive Bayes} lại hoạt động hiệu quả (Accuracy tăng mạnh) sau khi áp dụng PCA, vì dữ liệu sau biến đổi đã thỏa mãn giả định của mô hình này.
+
+    \item \textbf{Sự chồng lấn giữa các lớp:}
+    Trên các biểu đồ phân tán, các điểm dữ liệu của các nhãn khác nhau (biểu thị bằng các màu sắc khác nhau) bị trộn lẫn thành một khối dày đặc (dense blob) ở trung tâm. Không có ranh giới rõ ràng nào được hình thành. Điều này phản ánh bản chất của PCA là \textit{không giám sát}: nó chỉ tìm hướng mà dữ liệu biến thiên mạnh nhất (variance) chứ không quan tâm đến việc tách biệt các nhãn. Điều này giải thích tại sao việc giảm chiều bằng PCA lại gây hại cho các mô hình có khả năng học phi tuyến mạnh như MLP hay Softmax Regression, do PCA đã vô tình loại bỏ các thông tin phân loại nằm ở các chiều có phương sai thấp.
+
+    \item \textbf{Tính độc lập của các chiều:}
+    Các trục của đám mây dữ liệu trong các biểu đồ cặp thường song song với các trục toạ độ, cho thấy các thành phần PCA đã khử tương quan tốt.
+\end{itemize}
+
+\subsection{Phân tích khả năng phân tách với LDA}
+
+Khác với PCA, LDA sử dụng thông tin nhãn để tìm ra không gian chiếu tối ưu cho việc phân loại. Hình \ref{fig:lda_pair_plot} minh họa kết quả khi giảm xuống 6 chiều bằng LDA.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/lda_6d.png} 
+    \caption{Biểu đồ quan hệ cặp của 6 thành phần LDA.}
     \label{fig:lda_pair_plot}
 \end{figure}
 
-Từ Hình~\ref{fig:lda_pair_plot}, một số nhận xét quan trọng có thể được rút ra:
+Kết quả từ LDA cho thấy một bức tranh hoàn toàn khác biệt và giàu thông tin hơn về khả năng phân loại:
+
 \begin{itemize}
-    \item \textbf{Sự tách biệt của lớp dấu câu (PUNCT):} Quan sát nổi bật nhất là sự tách biệt gần như hoàn toàn của lớp \texttt{PUNCT} (màu xanh lam). Đặc biệt, thành phần thứ nhất (LDA1) đã đóng vai trò chính trong việc phân tách lớp này ra khỏi tất cả các lớp từ loại khác. Điều này được thể hiện rõ ở cột đầu tiên và hàng đầu tiên của ma trận, nơi cụm điểm màu xanh lam nằm ở một vùng riêng biệt so với phần còn lại của dữ liệu.
+    \item \textbf{Sự tách biệt tuyệt đối của lớp Dấu câu (PUNCT):} 
+    Quan sát thành phần \textbf{LDA1} (trục hoành ở hàng 1 hoặc trục tung ở cột 1), ta thấy một cụm dữ liệu màu xanh lam (tương ứng với nhãn PUNCT) bị tách biệt hoàn toàn khỏi phần còn lại của dữ liệu. Trên biểu đồ mật độ của LDA1 (ô đầu tiên góc trái trên), có hai đỉnh phân phối riêng biệt. Điều này chứng tỏ rằng trong không gian ngữ nghĩa của PhoBERT, các dấu câu mang một đặc trưng thống kê cực kỳ khác biệt so với từ ngữ thông thường. LDA1 chính là "trục đặc trưng" chuyên biệt để nhận diện dấu câu.
 
-    \item \textbf{Sự phân cụm của các từ loại khác:} Đối với các từ loại còn lại, các thành phần từ LDA2 đến LDA6 cho thấy dữ liệu có xu hướng phân thành các cụm riêng biệt, mặc dù có sự chồng chéo nhất định. Có thể thấy rõ các cụm màu sắc khác nhau (tương ứng với các nhãn như N, V, A,...) có xu hướng tập trung tại các vùng khác nhau trong không gian 6 chiều mới. Điều này cho thấy các vector đặc trưng sau khi giảm chiều vẫn giữ lại được những thông tin ngữ nghĩa hữu ích để phân biệt các lớp.
+    \item \textbf{Sự hình thành các cụm từ loại:}
+    Khác với khối "blob" hỗn độn của PCA, các biểu đồ LDA (ví dụ: LDA2 vs LDA3, LDA4 vs LDA5) cho thấy sự hình thành của các cụm (clusters) rõ rệt. 
+    \begin{itemize}
+        \item Các điểm màu xanh lá cây nhạt (thường là Danh từ - N) có xu hướng tụ lại thành một vùng.
+        \item Các điểm màu tím/hồng (thường là Động từ/Tính từ) tụ lại ở một vùng đối diện.
+    \end{itemize}
+    Sự phân tách này chứng minh rằng dữ liệu gốc thực sự chứa thông tin để phân loại, và LDA đã cô đọng những thông tin đó vào 6 chiều này.
 
-    \item \textbf{Mức độ chồng chéo:} Mặc dù có sự phân cụm, vẫn tồn tại sự chồng chéo đáng kể giữa một số lớp. Ví dụ, trong biểu đồ của LDA2 và LDA3, các cụm màu xanh lá cây, hồng và vàng có sự giao thoa. Điều này cho thấy một số từ loại có thể có đặc điểm ngữ nghĩa hoặc ngữ cảnh sử dụng tương đồng trong không gian vector của PhoBERT mà LDA chưa thể phân tách hoàn toàn.
+    \item \textbf{Vùng chồng lấn:}
+    Mặc dù tách cụm tốt hơn PCA, nhưng sự giao thoa giữa các lớp vẫn tồn tại (ví dụ: giữa cụm màu vàng và màu xanh lá trong LDA4). Đây chính là những trường hợp "nhập nhằng" trong ngôn ngữ (ví dụ: từ "cày" vừa có thể là Danh từ, vừa là Động từ) mà các mô hình học máy sẽ gặp khó khăn.
 \end{itemize}
 
-Nhìn chung, kết quả trực quan hóa này khẳng định rằng việc giảm chiều bằng LDA đã thành công trong việc tìm ra một không gian đặc trưng mới có khả năng phân biệt tốt các lớp POS tag. Dữ liệu sau khi giảm chiều vẫn giữ lại được thông tin quan trọng, tạo tiền đề thuận lợi cho việc xây dựng và huấn luyện các mô hình học máy ở giai đoạn tiếp theo.
+\textbf{Kết luận sơ bộ từ trực quan hóa:} 
+PCA cho thấy dữ liệu tuân theo phân phối chuẩn (ủng hộ việc dùng Naive Bayes), trong khi LDA khẳng định dữ liệu có cấu trúc phân tách tốt (ủng hộ tiềm năng đạt độ chính xác cao của Softmax Regression và MLP). Sự khác biệt giữa Hình \ref{fig:pca_pair_plot} và Hình \ref{fig:lda_pair_plot} chính là minh chứng trực quan cho sự đánh đổi giữa việc "giữ lại thông tin tổng quát" (PCA) và "tối ưu hóa cho phân loại" (LDA).
 
-Để có một cái nhìn tổng quan và trực quan hơn nữa, sẽ tiếp tục thực hiện giảm chiều dữ liệu xuống chỉ còn 2 thành phần chính. Kết quả được minh họa trong Hình~\ref{fig:lda_2d_plot}.
+\subsection{Trực quan hóa không gian dữ liệu trên 2 chiều}
+
+Để có cái nhìn tổng quan trực quan nhất, dữ liệu được nén sâu hơn nữa xuống còn 2 chiều (2D). Mặc dù việc nén từ 768 chiều xuống 2 chiều gây mất mát lượng lớn thông tin, nó cho phép ta quan sát trực tiếp cấu trúc toàn cục của dữ liệu.
+
+\subsubsection{So sánh phân bố thực tế (True Labels) trên PCA và LDA}
+
+Hình \ref{fig:2d_pca_true} và Hình \ref{fig:2d_lda_true} so sánh kết quả chiếu dữ liệu lên mặt phẳng 2D sử dụng PCA và LDA, với màu sắc đại diện cho nhãn từ loại thực tế (Ground Truth).
+
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{images/pca_2d_true.png}
+        \caption{Phân bố nhãn thực tế trên không gian 2D PCA.}
+        \label{fig:2d_pca_true}
+\end{figure}
+
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{images/lda_2d_true.png}
+        \caption{Phân bố nhãn thực tế trên không gian 2D LDA.}
+        \label{fig:2d_lda_true}
+\end{figure}
+
+\textbf{Nhận xét:}
+\begin{itemize}
+    \item \textbf{PCA (Hình \ref{fig:2d_pca_true}):} Dữ liệu xuất hiện dưới dạng một khối cầu lớn ("blob") với các nhãn trộn lẫn vào nhau. Sự chồng chéo này xác nhận rằng các phương sai lớn nhất (Principal Components) của PhoBERT không nhất thiết tương ứng với sự khác biệt về từ loại. Tuy nhiên, ta vẫn thấy một sự phân hóa nhẹ: các điểm màu xanh tím (PUNCT) có xu hướng dạt về góc dưới bên phải, tách nhẹ khỏi đám mây trung tâm.
+    
+    \item \textbf{LDA (Hình \ref{fig:2d_lda_true}):} Sự khác biệt là cực kỳ rõ rệt. LDA đã ép không gian vector co cụm lại để tối đa hóa khoảng cách giữa các lớp.
+    \begin{itemize}
+        \item Cụm bên phải (màu xanh tím): Tương ứng hoàn toàn với lớp \textbf{PUNCT} (Dấu câu). Đây là minh chứng mạnh mẽ nhất cho thấy dấu câu có đặc trưng ngữ cảnh hoàn toàn khác biệt so với từ vựng.
+        \item Cụm bên trái (nhiều màu): Là tập hợp của các từ loại thực (Danh, Động, Tính từ...). Dù chồng lấn, nhưng ta thấy sự phân tầng rõ rệt theo trục dọc (LDA Component 2): Phía trên tập trung nhiều màu vàng/hồng (nhóm từ chức năng/hư từ), phía dưới tập trung màu xanh lá (Danh từ).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Phân tích Phân cụm K-Means}
+
+Để khám phá cấu trúc tiềm ẩn trong dữ liệu PhoBERT, phương pháp phân cụm K-Means được áp dụng trên không gian đặc trưng gốc (768 chiều). Mục tiêu là xác định xem liệu các từ loại có tự nhiên hình thành các nhóm riêng biệt hay không, và nếu có, số lượng cụm tối ưu là bao nhiêu.
+\subsubsection{Xác định số cụm tối ưu ($K$)}
+Việc lựa chọn số cụm $K$ được thực hiện thông qua phương pháp Elbow (dựa trên Inertia) và chỉ số Silhouette Score.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{images/2D_LDA_10kToken.png} 
-    \caption{Trực quan hóa dữ liệu trên không gian 2 chiều sử dụng LDA. Mỗi điểm biểu diễn một token, màu sắc tương ứng với nhãn POS tag thực tế.}
-    \label{fig:lda_2d_plot}
+    \includegraphics[width=1\textwidth]{images/optimal_k_kmeans.png}
+    \caption{Phân tích tìm K tối ưu: Elbow Method (trục trái - xanh) và Silhouette Score (trục phải - đỏ).}
+    \label{fig:optimal_k}
 \end{figure}
 
-Biểu đồ trong Hình~\ref{fig:lda_2d_plot} củng cố một cách mạnh mẽ nhận định từ ma trận biểu đồ 6 chiều trước đó:
+Từ Hình \ref{fig:optimal_k}, ta quan sát thấy:
 \begin{itemize}
-    \item \textbf{Khả năng phân tách của LDA Component 1:} Thành phần LDA thứ nhất (trục hoành) một lần nữa cho thấy khả năng vượt trội trong việc phân tách hoàn toàn lớp \texttt{PUNCT} (cụm điểm màu xanh lam bên phải) ra khỏi tất cả các từ loại còn lại. Điều này cho thấy đặc trưng của dấu câu là khác biệt nhất trong không gian vector của PhoBERT.
-    
-    \item \textbf{Sự mất mát thông tin:} Tuy nhiên, khi chỉ sử dụng 2 chiều, tất cả các lớp từ loại khác (danh từ, động từ, tính từ, v.v.) bị dồn lại thành một cụm lớn và chồng chéo lên nhau rất nhiều (cụm điểm nhiều màu sắc bên trái). Trong không gian 2 chiều này, việc phân biệt rạch ròi các lớp này gần như là không thể.
+    \item \textbf{Elbow Method:} Đường cong Inertia giảm đều đặn và không xuất hiện điểm gập (elbow) rõ rệt. Điều này ám chỉ dữ liệu trong không gian gốc phân bố khá liên tục, không bị chia cắt thành các cụm hình cầu rời rạc.
+    \item \textbf{Silhouette Score:} Đạt đỉnh cao nhất tại \textbf{$K=5$} (với giá trị khoảng 0.06). Mặc dù giá trị tuyệt đối thấp (do sự chồng lấn dữ liệu), đỉnh cục bộ này gợi ý rằng dữ liệu có xu hướng gom thành 5 nhóm ngữ nghĩa lớn.
+    \item \textbf{Quyết định:} Chọn $K=5$ để thực hiện phân cụm dù cho số lượng nhãn POS thực tế là 20 nhãn. Việc $K$ tối ưu nhỏ hơn nhiều so với số nhãn thực tế cho thấy PhoBERT có xu hướng gom các từ loại chi tiết vào các nhóm cú pháp lớn hơn (ví dụ: gom hết Danh từ riêng, Danh từ chung vào một nhóm; hoặc gom các hư từ vào một nhóm).
 \end{itemize}
 
-\noindent
-Kết quả này cho thấy rằng, mặc dù 2 chiều là hữu ích để có cái nhìn tổng quan và xác nhận sự khác biệt của lớp dễ phân biệt nhất, nhưng nó lại làm mất đi nhiều thông tin quan trọng cần thiết để phân biệt các lớp phức tạp hơn. Điều này khẳng định sự cần thiết của việc sử dụng số chiều lớn hơn để giữ lại đủ thông tin cho mô hình phân loại hoạt động hiệu quả.
+\subsubsection{Trực quan hóa kết quả phân cụm (Clustering Results)}
+
+Sau khi huấn luyện K-Means với $K=5$, nhãn dự đoán (Cluster ID) được gán cho từng điểm dữ liệu và trực quan hóa lại trên nền 2D PCA và LDA (Hình \ref{fig:kmeans_pca}, \ref{fig:kmeans_lda}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/pca_2d_kmeans.png}
+    \caption{Kết quả phân cụm K-Means ($K=5$) trên nền PCA.}
+    \label{fig:kmeans_pca}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/lda_2d_kmeans.png}
+    \caption{Kết quả phân cụm K-Means ($K=5$) trên nền LDA.}
+    \label{fig:kmeans_lda}
+\end{figure}
+
+\textbf{Phân tích kết quả phân cụm:}
+
+\begin{itemize}
+    \item \textbf{Trên không gian PCA (Hình \ref{fig:kmeans_pca}):} 
+    K-Means chia cắt "đám mây" dữ liệu thành các vùng lãnh thổ riêng biệt. Các cụm (0, 1, 2, 3, 4) được phân chia khá đều.
+    \begin{itemize}
+        \item Đáng chú ý, cụm màu xanh da trời (Cluster 4) ở góc dưới bên phải trùng khớp vị trí với nhóm \textbf{PUNCT} trong biểu đồ nhãn thật (Hình \ref{fig:2d_pca_true}). Điều này khẳng định K-Means đã "tự học" và phát hiện ra nhóm dấu câu mà không cần giáo viên.
+    \end{itemize}
+
+    \item \textbf{Trên không gian LDA (Hình \ref{fig:kmeans_lda}):} 
+    Sự tương đồng giữa kết quả phân cụm không giám sát (K-Means) và không gian phân lớp có giám sát (LDA) là minh chứng rõ nét nhất cho cấu trúc nội tại của dữ liệu. Quan sát Hình \ref{fig:kmeans_lda}, ta thấy hai vùng dữ liệu tách biệt hoàn toàn và K-Means đã gán nhãn chúng theo quy luật:
+
+    \begin{itemize}
+        \item \textbf{Sự lẫn lộn nhóm dấu câu:} 
+        Vùng dữ liệu bên phải (tương ứng với lớp PUNCT trong nhãn thật) được K-Means bao phủ bởi sự pha trộn của \textbf{Cụm 0 (Màu đỏ)}, \textbf{Cụm 2 (Màu xanh ngọc)} và \textbf{Cụm 3 (Màu xanh dương)}. 
+
+        \item \textbf{Sự phân tầng ngữ nghĩa trong nhóm Từ ngữ:} 
+        Vùng dữ liệu lớn bên trái (tương ứng với các từ loại N, V, A...) cho thấy sự phân chia ranh giới rõ rệt theo trục dọc giữa hai cụm lớn:
+        \begin{itemize}
+            \item \textbf{Cụm 4 (Màu tím):} Chiếm lĩnh phần phía trên của khối dữ liệu. Đối chiếu với biểu đồ nhãn thật (Hình \ref{fig:2d_lda_true}), vùng này thường tập trung các Động từ (V) và Tính từ (A).
+            \item \textbf{Cụm 1 (Màu vàng xanh):} Chiếm lĩnh phần phía dưới. Đối chiếu với nhãn thật, vùng này tương ứng mạnh mẽ với các Danh từ (N).
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\textbf{Kết luận về thực nghiệm phân tích dữ liệu:}
+Các kết quả trực quan hóa và phân cụm đã chứng minh rằng:
+\begin{enumerate}
+    \item Dữ liệu PhoBERT chứa đựng cấu trúc ngữ nghĩa phong phú, trong đó các nhóm từ loại có sự phân tách nhất định về mặt hình học.
+    \item \textbf{Dấu câu (Punctuation)} là lớp dễ phân biệt nhất, được tách biệt hoàn toàn bởi phương pháp không giám sát (K-Means) nhưng lại gây khó khăn cho phương pháp có giám sát (LDA).
+    \item Sự chồng lấn lớn giữa các từ loại (Danh/Động/Tính) trong không gian 2D giải thích tại sao các mô hình đơn giản (như Naive Bayes trên dữ liệu gốc) lại gặp khó khăn, và cần đến các mô hình phi tuyến mạnh (như MLP) hoặc không gian chiều cao để phân loại chính xác.
+\end{enumerate}
 
 \section{Môi trường thực nghiệm}
 
@@ -111,163 +242,386 @@ Các thí nghiệm trong nghiên cứu này được triển khai và thực thi
 
 Cấu hình phần cứng chính được sử dụng trong quá trình huấn luyện bao gồm GPU NVIDIA Tesla T4 với bộ nhớ đồ họa 15GB, cùng với môi trường phần mềm dựa trên Python 3.12.12 và các thư viện liên quan như \texttt{PyTorch}, \texttt{Transformers}, \texttt{Scikit-learn} và \texttt{NumPy}. Môi trường GPU giúp tăng tốc quá trình huấn luyện và suy luận của mô hình, đặc biệt khi sử dụng các mô hình ngôn ngữ lớn như PhoBERT.
 
-Tất cả các thực nghiệm, bao gồm huấn luyện các mô hình Naive Bayes, Softmax Regression hay Multi Layer Perceptron, đều được thực hiện trong cùng điều kiện phần cứng và phần mềm nhằm đảm bảo tính nhất quán và khả năng tái lập của kết quả.
+Tất cả các thực nghiệm, bao gồm huấn luyện các mô hình, đều được thực hiện trong cùng điều kiện phần cứng và phần mềm nhằm đảm bảo tính nhất quán và khả năng tái lập của kết quả.
 
-\section{Kết quả}
+\section{Thực nghiệm}
 
-Các thí nghiệm được thiết kế để đánh giá hiệu suất mô hình dựa trên ba yếu tố:
+Mục này trình bày chi tiết các kết quả thực nghiệm đạt được trên bộ dữ liệu POS Tagging tiếng Việt. Các thí nghiệm được thiết kế để đánh giá hiệu suất của mô hình trên hai bài toán riêng biệt nhưng có liên hệ mật thiết với nhau:
 \begin{enumerate}
-    \item \textbf{Thuật toán mô hình:} Naive Bayes (NB), Softmax Regression (SR), và Multi-Layer Perceptron (MLP).
-    \item \textbf{Số chiều đặc trưng:} Dữ liệu gốc (768 chiều) và dữ liệu giảm chiều bằng PCA (xuống 256 và 64 chiều).
-    \item \textbf{Tỉ lệ phân chia Train/Test:} 80/20, 70/30, và 60/40.
+    \item \textbf{Bài toán Phân loại (Classification):} Gán nhãn từ loại cụ thể (N, V, A,...) cho từng token. Đây là bài toán chính của nghiên cứu.
+    \item \textbf{Bài toán Hồi quy (Regression):} Dự đoán mức độ tin cậy (xác suất) của nhãn "Danh từ" (Noun) cho một token. Đây là bài toán mở rộng nhằm đánh giá khả năng mô hình hóa độ bất định ngữ nghĩa.
 \end{enumerate}
 
-Bài tiểu luận tập trung vào hai chỉ số đánh giá chính: Accuracy (Độ chính xác) và F1-Score (Weighted Avg và Macro Avg) để xử lý tính mất cân bằng của dữ liệu.
 
-Kết quả chi tiết được trình bày riêng cho từng mô hình trong các Bảng \ref{tab:nb_results}, \ref{tab:sr_results}, và \ref{tab:mlp_results}.
+% =================================================================
+% PHẦN 1: KẾT QUẢ BÀI TOÁN PHÂN LOẠI
+% =================================================================
+\subsection{Kết quả Bài toán Phân loại}
+
+Các thí nghiệm phân loại được đánh giá dựa trên các yếu tố biến thiên:
+\begin{itemize}
+    \item \textbf{Thuật toán:} Naive Bayes (NB), Softmax Regression (SR), và Multi-Layer Perceptron (MLP).
+    \item \textbf{Số chiều đặc trưng:} Dữ liệu gốc (768 chiều) và dữ liệu giảm chiều bằng PCA (256, 64 chiều).
+    \item \textbf{Phương pháp huấn luyện:} 
+    \begin{itemize}
+        \item \textit{Standard:} Huấn luyện bình thường, không can thiệp vào hàm mất mát.
+        \item \textit{Weighted:} Huấn luyện có sử dụng phạt trọng số để xử lý mất cân bằng dữ liệu.
+    \end{itemize}
+    \item \textbf{Tỉ lệ Train/Test:} 80/20, 70/30, và 60/40.
+\end{itemize}
+
+Hai chỉ số đánh giá chính được sử dụng là Accuracy và F1-Score (cả Weighted và Macro).
+
+\subsubsection{Kết quả định lượng}
+
+Kết quả chi tiết được trình bày trong các Bảng \ref{tab:nb_results}, \ref{tab:sr_results}, và \ref{tab:mlp_results}. Các bảng này so sánh trực tiếp hiệu suất giữa phương pháp chuẩn (Standard) và phương pháp có trọng số (Weighted).
 
 % ------- BẢNG 1: NAIVE BAYES (NB) -------
 \begin{table}[H]
     \centering
-    \caption{Kết quả của mô hình Naive Bayes (GaussianNB) theo số chiều và tỉ lệ chia.}
+    \caption{Kết quả so sánh mô hình Naive Bayes (GaussianNB).}
     \label{tab:nb_results}
-    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
     \resizebox{\textwidth}{!}{%
-        \begin{tabular}{l ccc | ccc | ccc} 
+        \begin{tabular}{ll ccc | ccc | ccc} 
             \toprule
-            \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
-            \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
-             & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+            \multirow{2}{*}{\textbf{Phương pháp}} & \multirow{2}{*}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+            \cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+             & & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
             \midrule
-            768 (Gốc) & 0.68 & 0.68 & 0.68 & 0.70 & 0.70 & 0.70 & 0.55 & 0.55 & 0.56 \\
-            256       & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.66} & \textbf{0.67} & \textbf{0.68} \\
-            64        & 0.74 & 0.74 & 0.74 & 0.76 & 0.76 & 0.75 & 0.59 & 0.59 & 0.59 \\
+            \multirow{3}{*}{\textbf{Standard}} 
+             & 768 (Gốc) & 0.68 & 0.68 & 0.68 & 0.70 & 0.70 & 0.70 & 0.56 & 0.56 & 0.56 \\
+             & 256       & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.81} & \textbf{0.67} & \textbf{0.67} & \textbf{0.67} \\
+             & 64        & 0.75 & 0.74 & 0.74 & 0.76 & 0.75 & 0.75 & 0.59 & 0.59 & 0.59 \\
+            \midrule
+            \multirow{3}{*}{\textbf{Weighted}} 
+             & 768 (Gốc) & 0.67 & 0.67 & 0.67 & 0.69 & 0.69 & 0.69 & 0.54 & 0.54 & 0.55 \\
+             & 256       & \textbf{0.79} & \textbf{0.79} & \textbf{0.79} & \textbf{0.80} & \textbf{0.80} & \textbf{0.80} & \textbf{0.63} & \textbf{0.63} & \textbf{0.64} \\
+             & 64        & 0.69 & 0.68 & 0.68 & 0.72 & 0.71 & 0.71 & 0.52 & 0.51 & 0.51 \\
             \bottomrule
         \end{tabular}%
-    } % --- KẾT THÚC \resizebox ---
+    }
 \end{table}
 
 % ------- BẢNG 2: SOFTMAX REGRESSION (SR) -------
 \begin{table}[H]
     \centering
-    \caption{Kết quả của mô hình Softmax Regression (SR) theo số chiều và tỉ lệ chia.}
+    \caption{Kết quả so sánh mô hình Softmax Regression (SR).}
     \label{tab:sr_results}
-    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
     \resizebox{\textwidth}{!}{%
-        \begin{tabular}{l ccc | ccc | ccc}
+        \begin{tabular}{ll ccc | ccc | ccc}
             \toprule
-            \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
-            \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
-             & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+            \multirow{2}{*}{\textbf{Phương pháp}} & \multirow{2}{*}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+            \cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+             & & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
             \midrule
-            768 (Gốc) & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.72} & \textbf{0.77} & \textbf{0.75} \\
-            256       & 0.89 & 0.89 & \textbf{0.91} & 0.88 & 0.89 & \textbf{0.91} & 0.63 & 0.64 & \textbf{0.75} \\
-            64        & 0.83 & 0.83 & 0.83 & 0.82 & 0.82 & 0.82 & 0.57 & 0.57 & 0.57 \\
+            \multirow{3}{*}{\textbf{Standard}}
+             & 768 (Gốc) & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.91} & \textbf{0.74} & \textbf{0.77} & \textbf{0.74} \\
+             & 256       & 0.89 & 0.89 & \textbf{0.91} & 0.89 & 0.89 & \textbf{0.91} & 0.64 & 0.64 & \textbf{0.74} \\
+             & 64        & 0.83 & 0.83 & 0.83 & 0.82 & 0.82 & 0.82 & 0.57 & 0.57 & 0.57 \\
+            \midrule
+            \multirow{3}{*}{\textbf{Weighted}}
+             & 768 (Gốc) & \textbf{0.90} & \textbf{0.90} & \textbf{0.90} & \textbf{0.90} & \textbf{0.90} & \textbf{0.91} & \textbf{0.76} & \textbf{0.74} & \textbf{0.75} \\
+             & 256       & 0.88 & 0.88 & 0.88 & 0.88 & 0.88 & 0.88 & 0.68 & 0.68 & 0.68 \\
+             & 64        & 0.80 & 0.79 & 0.79 & 0.81 & 0.81 & 0.81 & 0.58 & 0.58 & 0.58 \\
             \bottomrule
         \end{tabular}%
-    } % --- KẾT THÚC \resizebox ---
+    }
 \end{table}
 
 % ------- BẢNG 3: MULTI-LAYER PERCEPTRON (MLP) -------
 \begin{table}[H]
     \centering
-    \caption{Kết quả của mô hình Multi-Layer Perceptron (MLP) theo số chiều và tỉ lệ chia.}
+    \caption{Kết quả so sánh mô hình Multi-Layer Perceptron (MLP).}
     \label{tab:mlp_results}
-    % --- TỰ ĐỘNG THU NHỎ BẢNG VỪA VỚI CHIỀU RỘNG TRANG ---
     \resizebox{\textwidth}{!}{%
-    \begin{tabular}{l ccc | ccc | ccc}
+    \begin{tabular}{ll ccc | ccc | ccc}
         \toprule
-        \multirow{}{}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
-        \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
-         & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
+        \multirow{2}{*}{\textbf{Phương pháp}} & \multirow{2}{*}{\textbf{Số chiều}} & \multicolumn{3}{c}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{F1-Score (Weighted)}} & \multicolumn{3}{c}{\textbf{F1-Score (Macro)}} \\
+        \cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+         & & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} & \textbf{80/20} & \textbf{70/30} & \textbf{60/40} \\
         \midrule
-        768 (Gốc) & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.68} & \textbf{0.67} & \textbf{0.66} \\
-        256       & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.66 & 0.66 & 0.64 \\
-        64        & 0.88 & 0.88 & 0.87 & 0.88 & 0.87 & 0.87 & 0.61 & 0.60 & 0.59 \\
+        \multirow{3}{*}{\textbf{Standard}}
+         & 768 (Gốc) & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.92} & \textbf{0.91} & \textbf{0.91} & \textbf{0.68} & \textbf{0.67} & \textbf{0.66} \\
+         & 256       & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.91 & \textbf{0.91} & \textbf{0.91} & 0.66 & 0.65 & 0.65 \\
+         & 64        & 0.88 & 0.88 & 0.87 & 0.88 & 0.87 & 0.87 & 0.60 & 0.60 & 0.60 \\
+        \midrule
+        \multirow{3}{*}{\textbf{Weighted}}
+         & 768 (Gốc) & \textbf{0.89} & \textbf{0.88} & \textbf{0.88} & \textbf{0.89} & \textbf{0.89} & \textbf{0.88} & \textbf{0.77} & \textbf{0.73} & \textbf{0.73} \\
+         & 256       & 0.88 & 0.87 & 0.87 & 0.88 & 0.88 & \textbf{0.88} & 0.72 & 0.70 & 0.69 \\
+         & 64        & 0.82 & 0.81 & 0.81 & 0.82 & 0.82 & 0.82 & 0.68 & 0.61 & 0.61 \\
         \bottomrule
     \end{tabular}%
-    } % --- KẾT THÚC \resizebox ---
+    }
 \end{table}
 
-% ------- BẢNG 4: F1-SCORE CHI TIẾT (Bôi đậm giá trị cao nhất) -------
+% ------- BẢNG 4: F1-SCORE CHI TIẾT (Thay đổi chú thích một chút để phù hợp) -------
 \begin{table}[h!]
     \centering
-    \small % Sử dụng font chữ nhỏ hơn một chút để đảm bảo vừa vặn
-    \caption{So sánh F1-Score chi tiết của từng nhãn (Navie bayes tại 256 chiều; Softmax regression và Multi-Layer perceptron tại 768 chiều với tỷ lệ Train/Test là 70/30).}
-    \label{tab:f1_per_label_alphabetical}
-    
-    % --- Cấu trúc 5 cột: l (Nhãn), r (Support), 3x c (Kết quả) ---
-    \begin{tabular}{lrccc}
+    \small
+    \setlength{\tabcolsep}{3pt} % Thu hẹp khoảng cách cột
+    \caption{So sánh F1-Score chi tiết từng nhãn giữa phương pháp Standard (Std) và Weighted (Wgt).}
+    \label{tab:f1_per_label_detailed}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lr | cc | cc | cc}
         \toprule
-        \textbf{Nhãn} & \textbf{Số bản ghi} & \textbf{NB (256D)} & \textbf{SR (768D)} & \textbf{MLP (768D)} \\
-        \cmidrule(lr){1-5} % Đường kẻ đầy đủ
-        
+        \multirow{2}{*}{\textbf{Nhãn}} & \multirow{2}{*}{\textbf{Support}} & \multicolumn{2}{c|}{\textbf{Naive Bayes (256D)}} & \multicolumn{2}{c|}{\textbf{Softmax Reg (768D)}} & \multicolumn{2}{c}{\textbf{MLP (768D)}} \\
+        \cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+         &  & \textbf{Std} & \textbf{Wgt} & \textbf{Std} & \textbf{Wgt} & \textbf{Std} & \textbf{Wgt} \\
         \midrule
-        % --- Dữ liệu đã bôi đậm giá trị cao nhất theo hàng ---
-        A     & 4028  & 0.72 & 0.79 & \textbf{0.81} \\
-        B     & 7     & 0.26 & \textbf{0.60} & 0.00 \\
-        C     & 2368  & 0.86 & \textbf{0.93} & \textbf{0.93} \\
-        E     & 4062  & 0.87 & \textbf{0.93} & \textbf{0.93} \\
-        I     & 27    & 0.47 & \textbf{0.49} & 0.00 \\
-        L     & 1180  & 0.91 & \textbf{0.96} & \textbf{0.96} \\
-        M     & 2426  & 0.92 & \textbf{0.98} & 0.97 \\
-        N     & 15467 & 0.81 & 0.91 & \textbf{0.92} \\
-        Nb    & 121   & 0.45 & \textbf{0.56} & 0.36 \\
-        Nc    & 1634  & 0.68 & 0.76 & \textbf{0.79} \\
-        Np    & 2555  & 0.69 & \textbf{0.86} & \textbf{0.86} \\
-        Nu    & 310   & 0.77 & \textbf{0.87} & 0.86 \\
-        P     & 2780  & 0.86 & 0.94 & \textbf{0.95} \\
-        PUNCT & 9635  & 0.89 & \textbf{1.00} & \textbf{1.00} \\
-        R     & 4747  & 0.79 & \textbf{0.89} & \textbf{0.89} \\
-        S     & 48    & 0.44 & \textbf{0.71} & 0.04 \\
-        T     & 422   & 0.46 & \textbf{0.62} & 0.59 \\
-        V     & 12779 & 0.79 & 0.90 & \textbf{0.91} \\
-        X     & 656   & 0.51 & \textbf{0.66} & 0.65 \\
-        Y     & 16    & \textbf{0.21} & 0.00 & 0.00 \\
+        A     & 2685  & 0.71 & 0.69 & 0.79 & 0.79 & \textbf{0.82} & 0.78 \\
+        B     & 4     & 0.22 & 0.12 & 0.00 & 0.80 & 0.00 & \textbf{0.86} \\
+        C     & 1578  & 0.85 & 0.85 & \textbf{0.93} & \textbf{0.93} & \textbf{0.93} & 0.91 \\
+        E     & 2708  & 0.86 & 0.85 & \textbf{0.93} & \textbf{0.93} & \textbf{0.93} & 0.92 \\
+        I     & 18    & 0.44 & 0.44 & 0.50 & 0.50 & 0.00 & \textbf{0.61} \\
+        L     & 787   & 0.92 & 0.92 & \textbf{0.97} & 0.95 & 0.96 & 0.95 \\
+        M     & 1617  & 0.93 & 0.92 & \textbf{0.97} & \textbf{0.97} & \textbf{0.97} & \textbf{0.97} \\
+        N     & 10308 & 0.81 & 0.78 & 0.91 & 0.90 & \textbf{0.92} & 0.88 \\
+        Nb    & 80    & 0.45 & 0.32 & 0.55 & 0.57 & 0.49 & \textbf{0.59} \\
+        Nc    & 1090  & 0.67 & 0.65 & 0.77 & 0.78 & \textbf{0.79} & 0.74 \\
+        Np    & 1703  & 0.69 & 0.64 & 0.86 & 0.83 & \textbf{0.87} & 0.82 \\
+        Nu    & 206   & 0.76 & 0.73 & 0.83 & \textbf{0.84} & \textbf{0.84} & 0.78 \\
+        P     & 1853  & 0.85 & 0.85 & \textbf{0.94} & 0.92 & \textbf{0.94} & 0.92 \\
+        PUNCT & 6421  & 0.90 & 0.90 & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} \\
+        R     & 3164  & 0.81 & 0.79 & 0.89 & 0.87 & \textbf{0.90} & 0.87 \\
+        S     & 32    & 0.46 & 0.34 & \textbf{0.83} & 0.40 & 0.00 & 0.67 \\
+        T     & 281   & 0.46 & 0.38 & \textbf{0.58} & 0.53 & \textbf{0.58} & 0.54 \\
+        V     & 8518  & 0.80 & 0.79 & 0.90 & 0.90 & \textbf{0.91} & 0.89 \\
+        X     & 437   & 0.51 & 0.45 & \textbf{0.65} & 0.60 & \textbf{0.65} & 0.61 \\
+        Y     & 11    & 0.22 & \textbf{0.23} & 0.00 & 0.20 & 0.00 & 0.13 \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+\subsubsection{Phân tích và đánh giá kết quả phân loại}
+
+Dựa trên dữ liệu định lượng từ các Bảng \ref{tab:nb_results} đến \ref{tab:f1_per_label_detailed}, phần này trình bày các phân tích về hiệu năng mô hình, tác động của kỹ thuật giảm chiều dữ liệu và hiệu quả của chiến lược phạt trọng số (Class Weighting).
+
+\paragraph{1. Hiệu suất tổng thể: Đánh đổi giữa Độ chính xác và Độ cân bằng}
+Kết quả thực nghiệm trên toàn bộ tập dữ liệu cho thấy sự khác biệt về mục tiêu tối ưu hóa giữa các cấu hình mô hình:
+
+\begin{itemize}
+    \item \textbf{Về Độ chính xác (Accuracy):} Mô hình \textbf{Multi-Layer Perceptron (MLP) - Standard} trên không gian 768 chiều đạt kết quả cao nhất với Accuracy là \textbf{0.92} (tỉ lệ 80/20). Điều này chỉ ra rằng khi không áp dụng trọng số lớp, mạng nơ-ron sâu tận dụng hiệu quả khả năng học phi tuyến để tối ưu hóa dự đoán cho các mẫu dữ liệu thuộc các lớp phổ biến.
+    
+    \item \textbf{Về Độ cân bằng (Macro F1-Score):} Mô hình \textbf{MLP - Weighted} (768 chiều) đạt kết quả tốt nhất với F1-Macro là \textbf{0.77}. Mặc dù Accuracy tổng thể giảm nhẹ xuống 0.89 so với phiên bản Standard, chỉ số F1-Macro có sự cải thiện đáng kể (tăng từ 0.68 lên 0.77). Tương tự, Softmax Regression (Weighted) cũng duy trì tính ổn định cao với F1-Macro đạt 0.76.
+    
+    \item \textbf{Nhận xét:} Tồn tại sự đánh đổi (trade-off) giữa độ chính xác tổng thể và khả năng nhận diện các lớp thiểu số. Việc cải thiện độ cân bằng (Macro F1) thường đi kèm với mức giảm nhẹ khoảng 1-3\% về độ chính xác tổng thể (Accuracy).
+\end{itemize}
+
+\paragraph{2. Tác động của giảm chiều dữ liệu (PCA)}
+Kết quả thực nghiệm khẳng định tác động trái chiều của phương pháp PCA đối với các loại mô hình khác nhau:
+\begin{itemize}
+    \item \textbf{Naive Bayes:} Hiệu suất thấp trên không gian gốc 768 chiều (Acc $\approx$ 0.68) nhưng được cải thiện rõ rệt khi giảm xuống 256 chiều (Acc $\approx$ 0.81). Nguyên nhân là do PCA giúp khử tương quan giữa các đặc trưng, thỏa mãn tốt hơn giả định độc lập của mô hình Gaussian Naive Bayes.
+    \item \textbf{Softmax Regression \& MLP:} Đạt hiệu suất tối ưu trên không gian đặc trưng gốc (768 chiều) và suy giảm khi áp dụng PCA. Điều này cho thấy các mô hình này có khả năng tự trích xuất đặc trưng và xử lý nhiễu; việc nén dữ liệu đã làm mất đi một phần thông tin ngữ nghĩa chi tiết cần thiết để phân định các ranh giới quyết định phức tạp.
+\end{itemize}
+
+\paragraph{3. Phân tích hiệu quả của chiến lược Phạt trọng số (Weighted vs. Standard)}
+Bảng \ref{tab:f1_per_label_detailed} cung cấp chi tiết về tác động của hàm mất mát có trọng số (Weighted Loss) đối với từng nhóm nhãn:
+
+\subparagraph{a) Cải thiện hiệu năng trên các lớp thiểu số:}
+Chiến lược Weighted cho thấy hiệu quả rõ rệt trong việc khắc phục tình trạng mô hình bỏ qua các lớp hiếm gặp.
+\begin{itemize}
+    \item \textbf{Nhãn B (4 mẫu):} Với phương pháp Standard, cả SR và MLP đều không nhận diện được (F1=0.00). Khi áp dụng Weighted, F1-Score của MLP tăng lên \textbf{0.86} và SR đạt 0.80.
+    \item \textbf{Nhãn I (18 mẫu):} MLP Standard có F1=0.00, trong khi MLP Weighted đạt mức \textbf{0.61}.
+    \item \textbf{Nhãn Nb (80 mẫu):} MLP Weighted cải thiện F1 từ 0.49 lên 0.59.
+\end{itemize}
+Việc gán trọng số phạt lớn cho các lớp thiểu số buộc thuật toán tối ưu hóa phải điều chỉnh ranh giới quyết định để bao quát các điểm dữ liệu này, thay vì coi chúng là nhiễu.
+
+\subparagraph{b) Tác động đến các lớp đa số:}
+Việc ưu tiên các lớp thiểu số dẫn đến sự suy giảm nhẹ về hiệu năng trên các lớp phổ biến.
+\begin{itemize}
+    \item Tại nhãn \textbf{N} (Danh từ), F1-Score của MLP giảm từ 0.92 (Standard) xuống 0.88 (Weighted).
+    \item Tại nhãn \textbf{V} (Động từ), F1-Score giảm từ 0.91 xuống 0.89.
+\end{itemize}
+Đây là nguyên nhân chính dẫn đến việc Accuracy tổng thể của phiên bản Weighted thấp hơn so với Standard.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.1\textwidth]{images/confusion_matrix_softmax_weighted_768.png}
+    \caption{Ma trận nhầm lẫn của phương pháp Hồi quy Softmax (Weighted) trên dữ liệu 768 chiều.}
+    \label{fig:confusion_matrix_softmax_weighted_768}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.1\textwidth]{images/confusion_matrix_mlp_weighted_768.png}
+    \caption{Ma trận nhầm lẫn của phương pháp Hồi quy MLP (Weighted) trên dữ liệu 768 chiều.}
+    \label{fig:confusion_matrix_mlp_weighted_768}
+\end{figure}
+
+
+\subsection{Tối ưu hóa số chiều cho Naive Bayes}
+
+Trong các thí nghiệm trước, ta đã thấy việc giảm chiều bằng PCA giúp cải thiện hiệu suất của Naive Bayes. Tuy nhiên, việc lựa chọn các mốc 256 hay 64 chiều mang tính chất cảm tính. Để khai thác tối đa tiềm năng của mô hình này, một thực nghiệm đã được thực hiện trên không gian số chiều từ 300 đến 500 nhằm tìm ra điểm mà mô hình đạt hiệu suất cao nhất.
+
+Kết quả tìm kiếm trên ba tỉ lệ chia dữ liệu khác nhau được minh họa trong Hình \ref{fig:nb_pca_80_20}, \ref{fig:nb_pca_70_30} và \ref{fig:nb_pca_60_40}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/opt_dim_nb_82.png} 
+    \caption{Tỉ lệ 80/20: Đỉnh tối ưu tại 430 chiều.}
+    \label{fig:nb_pca_80_20}
+
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/opt_dim_nb_73.png} 
+    \caption{Tỉ lệ 70/30: Đỉnh tối ưu tại 450 chiều.}
+    \label{fig:nb_pca_70_30}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/opt_dim_nb_64.png} 
+    \caption{Tỉ lệ 60/40: Đỉnh tối ưu tại 490 chiều.}
+    \label{fig:nb_pca_60_40}
+\end{figure}
+
+\textbf{Tổng hợp kết quả tối ưu:}
+
+\begin{table}[H]
+    \centering
+    \caption{Số chiều PCA tối ưu cho Naive Bayes trên các tập dữ liệu khác nhau.}
+    \label{tab:nb_optimal_dims}
+    \begin{tabular}{cccc}
+        \toprule
+        \textbf{Tỉ lệ Train/Test} & \textbf{Số chiều tối ưu} & \textbf{F1-Macro} & \textbf{F1-Weighted} \\
+        \midrule
+        80/20 & 430 & 0.6521 & $\approx$ 0.80 \\
+        70/30 & 450 & 0.6495 & $\approx$ 0.80 \\
+        60/40 & 490 & 0.6593 & $\approx$ 0.80 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
+\textbf{Phân tích và nhận định:}
 
-\subparagraph{Phân tích chi tiết kết quả thực nghiệm:}
-Dựa trên kết quả tổng hợp từ các Bảng \ref{tab:nb_results}, \ref{tab:sr_results}, \ref{tab:mlp_results}, và \ref{tab:f1_per_label_alphabetical}, các nhận định chi tiết có thể rút ra như sau:
-
-% ---- Phân tích 1: Hiệu suất tổng thể và PCA ----
-\subparagraph{Hiệu suất tổng thể và tác động của PCA:}
-Về mặt hiệu suất tổng thể, mô hình Multi-Layer perceptron (768D, 80/20) đạt kết quả cao nhất với Accuracy đạt 0.92 (Bảng \ref{tab:mlp_results}). Mô hình Softmax Regression (SR) (768D) bám sát ngay sau với Accuracy đạt 0.91.
-
-Một phát hiện quan trọng là tác động của PCA: Giảm chiều xuống 256D cải thiện đáng kể hiệu suất của Naive Bayes (Accuracy tăng từ 0.68 lên 0.81), có thể do 256 đặc trưng mới tuân thủ tốt hơn giả định Gaussian của Navie bayes. Ngược lại, PCA làm suy giảm hiệu suất của cả Softmax regression và Multi-Layer perceptron, cho thấy các mô hình này tận dụng hiệu quả không gian đặc trưng 768 chiều giàu thông tin của PhoBERT và việc nén tuyến tính (PCA) đã gây mất mát thông tin hữu ích.
-
-% ---- Phân tích 2: Sự mất cân bằng (Macro vs Weighted) ----
-\subparagraph{Đánh giá sự mất cân bằng:}
-SR là mô hình cân bằng hơn. Sự chênh lệch lớn giữa F1-Weighted (bị chi phối bởi lớp đa số) và F1-Macro (coi các lớp như nhau) là rõ rệt trên cả ba mô hình, cho thấy tác động của việc mất cân bằng dữ liệu:
 \begin{itemize}
-    \item \textbf{MLP (768D, 80/20):} F1-Weighted 0.92 so với F1-Macro 0.68.
-    \item \textbf{SR (768D, 70/30):} F1-Weighted 0.91 so với F1-Macro 0.77.
+    \item \textbf{Vùng tối ưu ổn định ở số chiều trung bình cao:}
+    Thực nghiệm chỉ ra rằng Naive Bayes hoạt động hiệu quả nhất trong khoảng \textbf{430 đến 490 chiều} (tương đương 56\% - 64\% lượng thông tin gốc). Điều này bác bỏ giả định rằng giảm chiều sâu (xuống 64 hay 256) là tốt nhất. Kết quả này cho thấy để phân loại chính xác các từ loại trong tiếng Việt, mô hình cần giữ lại một lượng lớn phương sai để nắm bắt các ngữ cảnh phức tạp, trong khi việc loại bỏ khoảng 300 chiều cuối cùng (vốn chứa ít thông tin và nhiều nhiễu) giúp cải thiện tính tổng quát hóa.
+
+    \item \textbf{Sự tách biệt giữa F1-Macro và Accuracy:}
+    Quan sát biểu đồ, Accuracy và Weighted F1 (đường màu xanh) gần như đi ngang và rất ổn định. Sự biến động chủ yếu nằm ở chỉ số \textbf{F1-Macro}. Điều này khẳng định rằng việc tinh chỉnh số chiều PCA thực chất là quá trình tối ưu hóa khả năng nhận diện các \textit{lớp thiểu số}. Khi chọn đúng số chiều, mô hình "cứu" được các lớp hiếm khỏi bị nhiễu lấn át, trong khi các lớp phổ biến (N, V) đã đủ mạnh để không bị ảnh hưởng.
+
+    \item \textbf{Mối quan hệ nghịch đảo giữa lượng dữ liệu và số chiều:}
+    Một xu hướng thú vị được quan sát thấy: \textbf{Dữ liệu càng nhiều, số chiều tối ưu càng giảm}. 
+    \begin{itemize}
+        \item Khi có nhiều dữ liệu nhất (80/20), mô hình đạt đỉnh sớm nhất tại \textbf{430 chiều}.
+        \item Khi dữ liệu ít hơn (60/40), mô hình cần tới \textbf{490 chiều} để đạt đỉnh.
+    \end{itemize}
+    Điều này mặc dù không rõ ràng nhưng có thể giải thích bởi: Khi tập huấn luyện đủ lớn (80\%), các thành phần chính đầu tiên ước lượng được phân phối của dữ liệu một cách chính xác và mạnh mẽ hơn, do đó mô hình có thể loại bỏ nhiễu ở các chiều cao sớm hơn. Ngược lại, khi dữ liệu ít (60\%), mô hình cần giữ lại thêm thông tin chi tiết ở các chiều cao hơn (từ 430 đến 490) để có đủ dữ kiện phân biệt các ranh giới mờ nhạt giữa các lớp.
 \end{itemize}
-Chỉ số F1-Macro của SR (0.77) cao hơn đáng kể so với MLP (0.68). Điều này cung cấp bằng chứng ban đầu cho thấy Softmax regression, dù có Accuracy tổng thể thấp hơn một chút, nhưng là mô hình cân bằng và ít thiên vị hơn trong việc xử lý các lớp thiểu số.
 
-% ---- Phân tích 3: Phân tích chi tiết F1 từng nhãn (NHẤN MẠNH YÊU CẦU) ----
-\subparagraph{Phân tích chi tiết từng nhãn:} Softmax regression vượt trội Multi-Layer perceptron ở các lớp thiểu số
+\subsection{Kết quả Bài toán Hồi quy}
 
-Phân tích F1-Score của từng nhãn trong Bảng \ref{tab:f1_per_label_alphabetical} đã làm rõ nhận định trên và là kết quả quan trọng nhất của thí nghiệm này.
-
-Trên các lớp đa số (N, V, PUNCT, E, C...), cả SR và MLP đều đạt hiệu suất rất cao, với SR nhỉnh hơn ở nhãn 'M' (0.98) và MLP hơn ở 'N' (0.92), 'V' (0.91).
-
-Tuy nhiên, sự khác biệt nằm ở các lớp thiểu số. Bảng \ref{tab:f1_per_label_alphabetical} cho thấy Softmax Regression vượt trội rõ rệt so với Multi-Layer Perceptron trong việc xử lý các lớp này:
+Mục tiêu của bài toán hồi quy là dự đoán độ tin cậy (xác suất) của nhãn "Danh từ" (N) dựa trên vector đặc trưng đầu vào. Để đảm bảo tính khách quan và tìm ra cấu hình mô hình tối ưu, nghiên cứu đã tiến hành thực nghiệm trên không gian tham số rộng, bao gồm:
 \begin{itemize}
-    \item \textbf{Multi-Layer Perceptron mất cân bằng và kém hiệu quả hơn:} Mô hình MLP (vốn có Accuracy tổng thể cao nhất) dường như đã bỏ qua các lớp cực hiếm. Nó đạt F1-Score bằng 0.00 cho các nhãn \textbf{B} (7 mẫu), \textbf{I} (27 mẫu), và \textbf{Y} (16 mẫu). Trên nhãn \textbf{S} (48 mẫu), hiệu suất cũng gần như bằng không (F1 = 0.04).
-    \item \textbf{Softmax regression cân bằng và hiệu quả hơn:} Ngược lại, SR thể hiện khả năng phân loại tốt hơn đáng kể. SR đạt F1-Score ấn tượng trên \textbf{B} (\textbf{0.60}) và \textbf{S} (\textbf{0.71}), và duy trì mức F1 chấp nhận được trên \textbf{I} (\textbf{0.49}). SR chỉ thất bại trên nhãn 'Y'.
+    \item \textbf{Tỉ lệ chia dữ liệu (Train/Test):} 80/20, 70/30, và 60/40.
+    \item \textbf{Số chiều dữ liệu:} 768 (Gốc), 256 (PCA), 64 (PCA).
+    \item \textbf{Tham số K (đối với KNN):} Chạy từ $K=1$ đến $K=9$.
 \end{itemize}
-Phân tích này chỉ ra rằng, trong khi MLP tối ưu hóa tốt hơn trên tổng thể (có thể do quá khớp nhẹ vào các lớp đa số), Softmax Regression lại là mô hình tổng quát hóa tốt hơn và đáng tin cậy hơn khi áp dụng cho bài toán có dữ liệu mất cân bằng nghiêm trọng này.
 
-% ---- Phân tích 4: Ảnh hưởng của tỉ lệ chia ----
-\subparagraph{Ảnh hưởng của tỉ lệ chia dữ liệu:}
-Một quan sát cuối cùng là hiệu suất của các mô hình gần như không thay đổi khi tỉ lệ chia là 80/20, 70/30 hay 60/40 (ví dụ: SR 768D luôn đạt Accuracy 0.91). Điều này cho thấy chỉ cần 60\% dữ liệu huấn luyện đã đủ để các mô hình này hội tụ, nhấn mạnh rằng chất lượng đặc trưng (PhoBERT) và lựa chọn kiến trúc mô hình quan trọng hơn là tăng thêm một lượng nhỏ dữ liệu.
+\subsubsection{Khảo sát và Tối ưu hóa mô hình K-Nearest Neighbors (KNN)}
 
-\begin{figure}[H]
+Do KNN là thuật toán lười (lazy learning) và nhạy cảm với cấu trúc dữ liệu cục bộ, việc tìm ra tham số $K$ và không gian đặc trưng phù hợp là bước tiên quyết.
+
+\paragraph{1. Ảnh hưởng của Tỉ lệ chia dữ liệu và Số chiều:}
+Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất (Peak $R^2$) đạt được tương ứng với mỗi cấu hình chia dữ liệu và số chiều.
+
+\begin{table}[H]
     \centering
-    \includegraphics[width=1\textwidth]{images/confusion_matrix.png}
-    \caption{Ma trận nhầm lẫn của phương pháp Hồi quy Softmax trên dữ liệu 768 chiều với tỷ lệ chia Train/Test là 70/30.}
-    \label{fig:sentence_length_hist}
-\end{figure}
+    \caption{Tổng hợp hiệu suất tối đa ($R^2$ Score) của KNN trên các kịch bản thực nghiệm khác nhau.}
+    \label{tab:knn_split_dim_summary}
+    \begin{tabular}{l | ccc}
+        \toprule
+        \multirow{2}{*}{\textbf{Tỉ lệ Train/Test}} & \multicolumn{3}{c}{\textbf{Hiệu suất tốt nhất ($R^2_{max}$) theo số chiều}} \\
+        \cmidrule(lr){2-4}
+         & \textbf{768 Chiều (Gốc)} & \textbf{256 Chiều (PCA)} & \textbf{64 Chiều (PCA)} \\
+        \midrule
+        \textbf{80/20} & \textbf{0.922} & \textbf{0.923} & \textbf{0.919} \\
+        \textbf{70/30} & 0.917 & 0.918 & 0.915 \\
+        \textbf{60/40} & 0.916 & 0.917 & 0.913 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textit{Nhận xét:}
+\begin{itemize}
+    \item \textbf{Tỉ lệ 80/20 mang lại kết quả tốt nhất:} Trên tất cả các số chiều, việc dành 80\% dữ liệu cho huấn luyện luôn cho kết quả $R^2$ cao nhất. Điều này dễ hiểu vì KNN cần mật độ dữ liệu tham chiếu dày đặc để đưa ra dự đoán chính xác cho các điểm mới.
+    \item \textbf{Không gian 256 chiều (PCA) tối ưu nhẹ:} Hiệu suất trên 256 chiều ($R^2=0.923$) nhỉnh hơn một chút so với 768 chiều ($R^2=0.922$) và 64 chiều ($R^2=0.919$). PCA ở mức độ vừa phải (256D) giúp loại bỏ nhiễu dư thừa mà không làm mất thông tin quan trọng.
+\end{itemize}
+
+$\Rightarrow$ \textbf{Quyết định:} Chọn tỉ lệ chia \textbf{80/20} làm cơ sở để phân tích chi tiết tham số $K$ và so sánh với MLP.
+
+\paragraph{2. Phân tích chi tiết tham số K (trên tập dữ liệu 80/20):}
+Bảng \ref{tab:knn_k_detail} trình bày chi tiết sự biến thiên của MSE và $R^2$ khi thay đổi $K$ từ 1 đến 9 trên tập dữ liệu tốt nhất (80/20).
+
+\begin{table}[H]
+    \centering
+    \caption{Chi tiết hiệu suất KNN theo tham số K (Tỉ lệ 80/20).}
+    \label{tab:knn_k_detail}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{c | cc | cc | cc}
+        \toprule
+        \multirow{2}{*}{\textbf{K}} & \multicolumn{2}{c|}{\textbf{768 Chiều (Gốc)}} & \multicolumn{2}{c|}{\textbf{256 Chiều (PCA)}} & \multicolumn{2}{c}{\textbf{64 Chiều (PCA)}} \\
+        \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+         & \textbf{MSE} & \textbf{$R^2$} & \textbf{MSE} & \textbf{$R^2$} & \textbf{MSE} & \textbf{$R^2$} \\
+        \midrule
+        1 & 0.015 & 0.891 & 0.015 & 0.894 & 0.015 & 0.890 \\
+        2 & 0.012 & 0.914 & 0.012 & 0.916 & 0.012 & 0.913 \\
+        3 & 0.011 & 0.920 & 0.011 & 0.921 & 0.011 & 0.917 \\
+        4 & 0.011 & 0.921 & 0.011 & 0.922 & \textbf{0.011} & \textbf{0.919} \\
+        5 & \textbf{0.011} & \textbf{0.922} & \textbf{0.011} & \textbf{0.923} & 0.011 & 0.919 \\
+        6 & 0.011 & 0.922 & 0.011 & 0.922 & 0.011 & 0.919 \\
+        7 & 0.011 & 0.921 & 0.011 & 0.922 & 0.011 & 0.918 \\
+        8 & 0.011 & 0.920 & 0.011 & 0.921 & 0.011 & 0.918 \\
+        9 & 0.011 & 0.919 & 0.011 & 0.920 & 0.012 & 0.917 \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+\textit{Kết luận chọn tham số:} Dựa trên Bảng \ref{tab:knn_k_detail}, mô hình đạt đỉnh hiệu suất và ổn định nhất tại \textbf{K=5}. Các giá trị $K$ nhỏ hơn (1, 2) chịu ảnh hưởng lớn bởi nhiễu (Overfitting), trong khi $K$ lớn hơn (7, 8, 9) bắt đầu làm mờ ranh giới dự đoán (Underfitting).
+
+\subsubsection{Hiệu suất của mô hình Multi-Layer Perceptron (MLP)}
+
+Mô hình MLP được đánh giá trên cùng các kịch bản phân chia để đảm bảo tính công bằng. Kết quả thực nghiệm (Bảng \ref{tab:mlp_regression_results}) cho thấy MLP ít nhạy cảm với tỉ lệ chia dữ liệu hơn KNN nhưng lại rất nhạy cảm với số chiều đặc trưng.
+
+\begin{table}[H]
+    \centering
+    \caption{Kết quả đánh giá mô hình MLP Regression trên các cấu hình khác nhau.}
+    \label{tab:mlp_regression_results}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l | cc | cc | cc}
+        \toprule
+        \multirow{2}{*}{\textbf{Không gian đặc trưng}} & \multicolumn{2}{c|}{\textbf{Split 80/20}} & \multicolumn{2}{c|}{\textbf{Split 70/30}} & \multicolumn{2}{c}{\textbf{Split 60/40}} \\
+        \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+         & \textbf{MSE} & \textbf{$R^2$} & \textbf{MSE} & \textbf{$R^2$} & \textbf{MSE} & \textbf{$R^2$} \\
+        \midrule
+        \textbf{768 Chiều (Gốc)} & \textbf{0.002} & \textbf{0.988} & \textbf{0.002} & \textbf{0.984} & \textbf{0.002} & \textbf{0.985} \\
+        \textbf{256 Chiều (PCA)} & 0.004 & 0.972 & 0.004 & 0.969 & 0.004 & 0.969 \\
+        \textbf{64 Chiều (PCA)}  & 0.009 & 0.936 & 0.009 & 0.933 & 0.010 & 0.931 \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+\subsubsection{Thảo luận và So sánh tổng hợp}
+
+Dựa trên kết quả tối ưu của từng mô hình (KNN tại $K=5$, PCA-256D và MLP tại 768D), nghiên cứu rút ra các kết luận quan trọng sau:
+
+\paragraph{1. Sự vượt trội của phương pháp Tham số hóa (MLP):}
+So sánh cấu hình tốt nhất của hai mô hình trên cùng tỉ lệ chia 80/20:
+\begin{itemize}
+    \item \textbf{KNN (K=5, 256D):} $R^2 \approx 0.923$, MSE $\approx 0.011$.
+    \item \textbf{MLP (768D):} $R^2 \approx 0.988$, MSE $\approx 0.002$.
+\end{itemize}
+Mô hình MLP giảm sai số MSE xuống hơn \textbf{5 lần} so với KNN. Kết quả $R^2$ tiệm cận 0.99 chứng tỏ mạng nơ-ron đã xấp xỉ gần như hoàn hảo hàm phân phối xác suất của Softmax Regression. Điều này khẳng định mối quan hệ giữa "vector ngữ nghĩa PhoBERT" và "độ tin cậy nhãn từ loại" là một mối quan hệ phi tuyến phức tạp mà các mô hình dựa trên khoảng cách đơn thuần như KNN không thể nắm bắt trọn vẹn.
+
+\paragraph{2. Nghịch lý về chiều dữ liệu (Dimensionality Paradox):}
+\begin{itemize}
+    \item Với \textbf{KNN}, giảm chiều bằng PCA (xuống 256D) giúp cải thiện nhẹ hiệu suất ($R^2$ tăng từ 0.922 lên 0.923) do loại bỏ được nhiễu và tác động của lời nguyền số chiều.
+    \item Với \textbf{MLP}, giảm chiều gây hại đáng kể ($R^2$ giảm từ 0.988 xuống 0.936). Mạng nơ-ron hoạt động như một bộ trích xuất đặc trưng tự động; việc nén dữ liệu tuyến tính bằng PCA trước đó đã làm mất đi các thông tin ngữ nghĩa tinh tế (nằm ở các chiều phương sai thấp) mà MLP cần để đạt độ chính xác cực đại.
+\end{itemize}
+
+\paragraph{Kết luận chung:} 
+Việc chuyển đổi bài toán POS Tagging sang hồi quy là hoàn toàn khả thi. Mô hình \textbf{MLP trên không gian đặc trưng gốc (768 chiều)} là lựa chọn tối ưu nhất, mang lại độ chính xác gần như tuyệt đối và khả năng tổng quát hóa cao, mở ra tiềm năng ứng dụng trong việc gán nhãn mềm (soft-labeling) cho các tác vụ NLP tiếp theo.
