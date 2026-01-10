@@ -1,0 +1,14 @@
+*
+!chapters/
+!images/
+!images/*
+!*.bib
+!*.tex
+chapters/*.aux
+!auto_compile.bat
+!readme.md
+!.gitignore
+!code
+!code/*
+!powerpoint
+!powerpoint/*
