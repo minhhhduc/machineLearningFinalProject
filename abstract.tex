@@ -1,0 +1,13 @@
+\chapter*{Tóm tắt}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+
+Nhận diện từ loại (Part-of-Speech Tagging -- POS Tagging) là một nhiệm vụ cơ bản và quan trọng trong lĩnh vực Xử lý Ngôn ngữ Tự nhiên (NLP), đóng vai trò nền tảng cho nhiều ứng dụng như dịch máy, phân tích cảm xúc, và hệ thống hỏi-đáp tự động. Tiểu luận này trình bày một quy trình gán nhãn từ loại toàn diện cho tiếng Việt, kết hợp sức mạnh của mô hình ngôn ngữ tiền huấn luyện PhoBERT với các kỹ thuật học máy truyền thống và hiện đại.
+
+Nghiên cứu được thực hiện trên bộ dữ liệu gồm 9.511 câu tiếng Việt với 217.557 token, sử dụng PhoBERT để trích xuất vector đặc trưng 768 chiều cho mỗi từ. Các mô hình phân loại được xây dựng và so sánh bao gồm Naive Bayes, Softmax Regression và Multi-Layer Perceptron (MLP). Ngoài ra, nghiên cứu còn phân tích tác động của kỹ thuật giảm chiều dữ liệu (PCA, LDA) lên hiệu suất mô hình và khám phá hướng tiếp cận hồi quy để dự đoán độ tin cậy của nhãn từ loại.
+
+Kết quả thực nghiệm cho thấy vector đặc trưng từ PhoBERT chứa đựng thông tin ngữ nghĩa phong phú, giúp các mô hình đơn giản đạt độ chính xác trên 90\%. Mô hình MLP đạt hiệu suất cao nhất với Accuracy 0.92. Đối với vấn đề mất cân bằng dữ liệu nghiêm trọng giữa các lớp từ loại, chiến lược phạt trọng số (Weighted Loss) đã chứng minh hiệu quả trong việc cải thiện khả năng nhận diện các lớp hiếm. Nghiên cứu cũng phát hiện nghịch lý thú vị về giảm chiều: PCA giúp tăng hiệu suất Naive Bayes (từ 0.68 lên 0.81) nhưng lại gây hại cho MLP và Softmax Regression do mất mát thông tin ngữ nghĩa tinh tế.
+
+Tiểu luận đã chứng minh rằng việc kết hợp mô hình học máy truyền thống với vector đặc trưng từ mô hình ngôn ngữ lớn là hướng tiếp cận hiệu quả, tiết kiệm tài nguyên nhưng vẫn đạt độ chính xác cao cho bài toán xử lý ngôn ngữ tiếng Việt.
+
+\vspace{1cm}
+\noindent\textbf{Từ khóa:} Gán nhãn từ loại, POS Tagging, PhoBERT, Học máy, Xử lý ngôn ngữ tự nhiên, Tiếng Việt, Giảm chiều dữ liệu, PCA, LDA.
