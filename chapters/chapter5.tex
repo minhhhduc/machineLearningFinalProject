@@ -1,8 +1,8 @@
-\chapter{Tổng kết và Hướng phát triển}
+\chapter{Tổng kết}
 
-\section{Tổng kết các kết quả nghiên cứu}
+\section{Tổng kết các kết quả thực nghiệm}
 
-Nghiên cứu này đã xây dựng và đánh giá một quy trình gán nhãn từ loại (POS Tagging) toàn diện cho tiếng Việt, tận dụng sức mạnh của mô hình ngôn ngữ tiền huấn luyện PhoBERT kết hợp với các kỹ thuật học máy cổ điển và hiện đại. Dựa trên các thực nghiệm định lượng trên tập dữ liệu 9.511 câu, báo cáo rút ra các kết luận khoa học quan trọng sau:
+Nghiên cứu này đã xây dựng và đánh giá một quy trình xử lý dữ liệu từ loại (POS Tagging) đầy đủ cho tiếng Việt, tận dụng sức mạnh của mô hình ngôn ngữ tiền huấn luyện PhoBERT kết hợp với các kỹ thuật học máy cổ điển. Dựa trên các thực nghiệm định lượng trên tập dữ liệu 9.511 câu, báo cáo rút ra các kết luận quan trọng sau:
 
 \subsection{Về bài toán Phân loại (Classification)}
 
@@ -10,27 +10,27 @@ Nghiên cứu này đã xây dựng và đánh giá một quy trình gán nhãn 
     \item \textbf{Hiệu quả của trích xuất đặc trưng PhoBERT:} 
     Kết quả thực nghiệm khẳng định vector đặc trưng 768 chiều từ PhoBERT chứa đựng lượng thông tin ngữ nghĩa và cú pháp phong phú, cho phép các mô hình đơn giản (như Softmax Regression) đạt độ chính xác trên 90\% mà không cần tinh chỉnh (fine-tuning) phức tạp.
 
-    \item \textbf{Sự đánh đổi giữa Độ chính xác và Độ cân bằng (Accuracy vs. Fairness):}
+    \item \textbf{Sự đánh đổi giữa Độ chính xác và Độ cân bằng:}
     Nghiên cứu chỉ ra một sự đánh đổi rõ rệt phụ thuộc vào chiến lược huấn luyện:
     \begin{itemize}
-        \item \textbf{Tối ưu hóa Accuracy:} Mô hình \textbf{MLP Standard} (không trọng số) đạt hiệu suất cao nhất (Accuracy 0.92) nhờ việc tối ưu hóa tốt cho các lớp phổ biến (N, V).
-        \item \textbf{Tối ưu hóa Độ bao phủ (Macro F1):} Chiến lược \textbf{Phạt trọng số (Weighted Loss)} là bắt buộc để xử lý dữ liệu mất cân bằng. Mô hình \textbf{MLP Weighted} và \textbf{Softmax Regression Weighted} đã "hồi sinh" khả năng nhận diện các lớp hiếm (như B, I, S) từ mức F1=0.00 lên mức khả quan (0.60 - 0.86), chấp nhận hy sinh một lượng nhỏ Accuracy tổng thể.
+        \item \textbf{Tối ưu hóa Accuracy:} Mô hình MLP Standard (không trọng số) đạt hiệu suất cao nhất (Accuracy 0.92) nhờ việc tối ưu hóa tốt cho các lớp phổ biến (N, V).
+        \item \textbf{Tối ưu hóa Độ bao phủ (Macro F1):} Chiến lược Phạt trọng số (Weighted Loss) là ưu tiên để xử lý dữ liệu mất cân bằng. Mô hình MLP Weighted và Softmax Regression Weighted đã hỗ trợ khả năng nhận diện các lớp hiếm (như B, I, S) từ mức F1=0.00 lên mức khả quan (0.60 - 0.86), chấp nhận hy sinh một lượng nhỏ Accuracy tổng thể.
     \end{itemize}
 
-    \item \textbf{Nghịch lý về chiều dữ liệu (Dimensionality Paradox):}
+    \item \textbf{Nghịch lý về chiều dữ liệu:}
     Tác động của giảm chiều dữ liệu (PCA) là trái ngược giữa các mô hình:
     \begin{itemize}
-        \item Là yếu tố \textit{sống còn} đối với \textbf{Naive Bayes}: Tăng Accuracy từ 0.68 lên 0.81 (tại 256-430 chiều) nhờ khử tương quan biến.
-        \item Là yếu tố \textit{gây hại} đối với \textbf{SR và MLP}: Làm giảm hiệu suất do mất mát thông tin ngữ nghĩa tinh tế trong các chiều phương sai thấp.
+        \item Là yếu tố quan trọng đối với Naive Bayes: Tăng Accuracy từ 0.68 lên 0.81 (tại 256-430 chiều) nhờ khử tương quan biến.
+        \item Là yếu tố gây hại đối với SR và MLP: Làm giảm hiệu suất do mất mát thông tin ngữ nghĩa trong các chiều phương sai thấp.
     \end{itemize}
 \end{itemize}
 
 \subsection{Về bài toán Hồi quy (Regression)}
 
-Nghiên cứu đã mở rộng bài toán sang hướng dự đoán độ tin cậy (xác suất) của nhãn từ loại, đạt được những kết quả khả quan:
+Đề tài đã mở rộng bài toán sang hướng dự đoán độ tin cậy (xác suất) của nhãn từ loại, đạt được những kết quả khả quan:
 
 \begin{itemize}
-    \item \textbf{Khả năng mô hình hóa độ bất định:} Việc chuyển đổi bài toán là hoàn toàn khả thi. Mô hình \textbf{MLP Regression} trên không gian 768 chiều đạt hệ số xác định $R^2 \approx 0.99$ và sai số MSE cực thấp (0.002), chứng tỏ mạng nơ-ron có thể xấp xỉ gần như hoàn hảo hàm phân phối xác suất của bài toán phân loại.
+    \item \textbf{Khả năng mô hình hóa độ bất định:} Việc chuyển đổi bài toán là hoàn toàn khả thi. Mô hình MLP Regression trên không gian 768 chiều đạt hệ số xác định $R^2 \approx 0.99$ và sai số MSE cực thấp (0.002), chứng tỏ mạng nơ-ron có thể xấp xỉ gần như hoàn hảo hàm phân phối xác suất của bài toán phân loại.
     \item \textbf{Ưu thế của mô hình tham số hóa:} Trong không gian vector ngữ nghĩa cao chiều, mô hình tham số hóa (MLP) vượt trội hoàn toàn so với mô hình phi tham số dựa trên khoảng cách (KNN), ngay cả khi KNN đã được tối ưu hóa tham số $K$ và giảm chiều dữ liệu.
 \end{itemize}
 
@@ -38,26 +38,17 @@ Nghiên cứu đã mở rộng bài toán sang hướng dự đoán độ tin c�
 Thông qua các kỹ thuật trực quan hóa (PCA, LDA) và phân cụm (K-Means), nghiên cứu phát hiện ra rằng PhoBERT mã hóa thông tin từ loại theo cấu trúc hình học rõ ràng:
 \begin{itemize}
     \item \textbf{Dấu câu (Punctuation)} là lớp được tách biệt mạnh mẽ nhất trong không gian vector.
-    \item Tồn tại sự phân tầng ngữ nghĩa tự nhiên (Latent Stratification) giữa nhóm Danh từ và nhóm Động từ/Tính từ mà các thuật toán không giám sát như K-Means có thể tự động phát hiện.
+    \item Tồn tại sự phân tầng ngữ nghĩa tự nhiên giữa nhóm Danh từ và nhóm Động từ/Tính từ mà các thuật toán không giám sát như K-Means có thể tự động phát hiện.
 \end{itemize}
 
 \section{Hạn chế của đề tài}
 
 Mặc dù đạt được những kết quả tích cực, nghiên cứu vẫn tồn tại một số hạn chế:
 \begin{itemize}
-    \item \textbf{Phạm vi mô hình ngôn ngữ:} Chỉ mới thử nghiệm trên PhoBERT-base, chưa đánh giá trên các biến thể khác như PhoBERT-large, XLM-RoBERTa hay ViBERT để so sánh tính hiệu quả của các kiến trúc embedding khác nhau.
-    \item \textbf{Giới hạn của phương pháp Hồi quy:} Nhãn mục tiêu (Target) của bài toán hồi quy hiện tại đang phụ thuộc vào đầu ra của mô hình Softmax Regression (Teacher-Student setup), chưa phải là độ tin cậy thực tế từ con người gán nhãn.
-    \item \textbf{Chưa tối ưu hóa tinh chỉnh (Fine-tuning):} Nghiên cứu mới chỉ dừng lại ở mức Feature Extraction (đóng băng PhoBERT). Phương pháp Fine-tuning toàn bộ mô hình (End-to-End learning) có thể mang lại kết quả cao hơn nhưng chưa được thực hiện do hạn chế về tài nguyên tính toán.
+    \item \textbf{Phạm vi mô hình ngôn ngữ:} Chỉ mới thử nghiệm trên PhoBERT-base, chưa đánh giá trên các biến thể khác như PhoBERT-large, XLM-RoBERTa hay ViBERT hoặc sử dụng các mô hình ngôn ngữ lớn để so sánh tính hiệu quả của các kiến trúc embedding khác nhau.
+    \item \textbf{Giới hạn của phương pháp Hồi quy:} Nhãn mục tiêu của bài toán hồi quy hiện tại đang phụ thuộc vào đầu ra của mô hình Softmax Regression, chưa phải là độ tin cậy thực tế từ con người gán nhãn.
+    \item \textbf{Chưa tối ưu hóa tinh chỉnh (Fine-tuning):} Nghiên cứu mới chỉ dừng lại ở mức trích xuất đặc trưng tĩnh (đóng băng PhoBERT). Phương pháp Fine-tuning toàn bộ mô hình (End-to-End learning) có thể mang lại kết quả cao hơn.
 \end{itemize}
-
-\section{Hướng phát triển}
-
-Dựa trên các kết quả và hạn chế đã nêu, các hướng nghiên cứu tiếp theo được đề xuất bao gồm:
-\begin{enumerate}
-    \item \textbf{Áp dụng các hàm mất mát chuyên sâu:} Thử nghiệm \textit{Focal Loss} thay vì Weighted Cross-Entropy để xử lý các mẫu khó (hard examples) thay vì chỉ dựa vào tần suất lớp.
-    \item \textbf{Mở rộng bài toán Hồi quy:} Sử dụng kỹ thuật \textit{Label Smoothing} hoặc \textit{Knowledge Distillation} từ các mô hình lớn hơn để tạo ra các nhãn xác suất mục tiêu chất lượng hơn cho bài toán hồi quy.
-    \item \textbf{Thực nghiệm trên miền dữ liệu mở rộng:} Đánh giá khả năng tổng quát hóa (Generalization) của mô hình Softmax Regression và MLP Weighted trên các tập dữ liệu văn bản khác miền (ví dụ: văn bản y sinh, pháp luật) để kiểm chứng độ bền vững của mô hình.
-\end{enumerate}
 
 \section{Lời kết}
 Tiểu luận đã chứng minh rằng việc kết hợp các mô hình học máy truyền thống với vector đặc trưng từ mô hình ngôn ngữ lớn là một hướng tiếp cận hiệu quả, tiết kiệm tài nguyên nhưng vẫn đạt độ chính xác cao cho bài toán xử lý tiếng Việt. Đặc biệt, việc lựa chọn chiến lược huấn luyện (có trọng số hay không) và phương pháp tiền xử lý (giảm chiều hay giữ nguyên) đóng vai trò quyết định đến hiệu năng cuối cùng, đòi hỏi sự thấu hiểu sâu sắc về bản chất của từng thuật toán và dữ liệu.

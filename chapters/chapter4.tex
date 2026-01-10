@@ -115,10 +115,10 @@ Kết quả từ LDA cho thấy một bức tranh hoàn toàn khác biệt và g
 
 \begin{itemize}
     \item \textbf{Sự tách biệt tuyệt đối của lớp Dấu câu (PUNCT):} 
-    Quan sát thành phần \textbf{LDA1} (trục hoành ở hàng 1 hoặc trục tung ở cột 1), ta thấy một cụm dữ liệu màu xanh lam (tương ứng với nhãn PUNCT) bị tách biệt hoàn toàn khỏi phần còn lại của dữ liệu. Trên biểu đồ mật độ của LDA1 (ô đầu tiên góc trái trên), có hai đỉnh phân phối riêng biệt. Điều này chứng tỏ rằng trong không gian ngữ nghĩa của PhoBERT, các dấu câu mang một đặc trưng thống kê cực kỳ khác biệt so với từ ngữ thông thường. LDA1 chính là "trục đặc trưng" chuyên biệt để nhận diện dấu câu.
+    Quan sát thành phần \textbf{LDA1} (trục hoành ở hàng 1 hoặc trục tung ở cột 1), ta thấy một cụm dữ liệu màu xanh lam (tương ứng với nhãn PUNCT) bị tách biệt hoàn toàn khỏi phần còn lại của dữ liệu. Trên biểu đồ mật độ của LDA1 (ô đầu tiên góc trái trên), có hai đỉnh phân phối riêng biệt. Điều này chứng tỏ rằng trong không gian ngữ nghĩa của PhoBERT, các dấu câu mang một đặc trưng thống kê cực kỳ khác biệt so với từ ngữ thông thường. Có thể coi LDA1 chính là trục đặc trưng chuyên biệt để nhận diện dấu câu.
 
     \item \textbf{Sự hình thành các cụm từ loại:}
-    Khác với khối "blob" hỗn độn của PCA, các biểu đồ LDA (ví dụ: LDA2 vs LDA3, LDA4 vs LDA5) cho thấy sự hình thành của các cụm (clusters) rõ rệt. 
+    Khác với khối "blob" hỗn độn của PCA, các biểu đồ LDA (ví dụ: LDA2 vs LDA3, LDA4 vs LDA5) cho thấy sự hình thành của các cụm rõ rệt. 
     \begin{itemize}
         \item Các điểm màu xanh lá cây nhạt (thường là Danh từ - N) có xu hướng tụ lại thành một vùng.
         \item Các điểm màu tím/hồng (thường là Động từ/Tính từ) tụ lại ở một vùng đối diện.
@@ -174,7 +174,7 @@ Việc lựa chọn số cụm $K$ được thực hiện thông qua phương ph
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{images/optimal_k_kmeans.png}
-    \caption{Phân tích tìm K tối ưu: Elbow Method (trục trái - xanh) và Silhouette Score (trục phải - đỏ).}
+    \caption{Phân tích tìm K tối ưu cho Kmeans.}
     \label{fig:optimal_k}
 \end{figure}
 
@@ -209,7 +209,7 @@ Sau khi huấn luyện K-Means với $K=5$, nhãn dự đoán (Cluster ID) đư�
     \item \textbf{Trên không gian PCA (Hình \ref{fig:kmeans_pca}):} 
     K-Means chia cắt "đám mây" dữ liệu thành các vùng lãnh thổ riêng biệt. Các cụm (0, 1, 2, 3, 4) được phân chia khá đều.
     \begin{itemize}
-        \item Đáng chú ý, cụm màu xanh da trời (Cluster 4) ở góc dưới bên phải trùng khớp vị trí với nhóm \textbf{PUNCT} trong biểu đồ nhãn thật (Hình \ref{fig:2d_pca_true}). Điều này khẳng định K-Means đã "tự học" và phát hiện ra nhóm dấu câu mà không cần giáo viên.
+        \item Đáng chú ý, cụm màu xanh da trời (Cluster 4) ở góc dưới bên phải trùng khớp vị trí với nhóm \textbf{PUNCT} trong biểu đồ nhãn thật (Hình \ref{fig:2d_pca_true}). 
     \end{itemize}
 
     \item \textbf{Trên không gian LDA (Hình \ref{fig:kmeans_lda}):} 
@@ -232,7 +232,7 @@ Sau khi huấn luyện K-Means với $K=5$, nhãn dự đoán (Cluster ID) đư�
 Các kết quả trực quan hóa và phân cụm đã chứng minh rằng:
 \begin{enumerate}
     \item Dữ liệu PhoBERT chứa đựng cấu trúc ngữ nghĩa phong phú, trong đó các nhóm từ loại có sự phân tách nhất định về mặt hình học.
-    \item \textbf{Dấu câu (Punctuation)} là lớp dễ phân biệt nhất, được tách biệt hoàn toàn bởi phương pháp không giám sát (K-Means) nhưng lại gây khó khăn cho phương pháp có giám sát (LDA).
+    \item Dấu câu (Punctuation) là lớp dễ phân biệt nhất, được tách biệt hoàn toàn bởi phương pháp không giám sát (K-Means) nhưng lại gây khó khăn cho phương pháp có giám sát (LDA).
     \item Sự chồng lấn lớn giữa các từ loại (Danh/Động/Tính) trong không gian 2D giải thích tại sao các mô hình đơn giản (như Naive Bayes trên dữ liệu gốc) lại gặp khó khăn, và cần đến các mô hình phi tuyến mạnh (như MLP) hoặc không gian chiều cao để phân loại chính xác.
 \end{enumerate}
 
@@ -359,7 +359,7 @@ Kết quả chi tiết được trình bày trong các Bảng \ref{tab:nb_result
     \centering
     \small
     \setlength{\tabcolsep}{3pt} % Thu hẹp khoảng cách cột
-    \caption{So sánh F1-Score chi tiết từng nhãn giữa phương pháp Standard (Std) và Weighted (Wgt).}
+    \caption{So sánh F1-Score chi tiết từng nhãn giữa phương pháp Standard (Std) và Weighted (Wgt) với tỷ lệ chia Train/Test 80/20.}
     \label{tab:f1_per_label_detailed}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{lr | cc | cc | cc}
@@ -452,27 +452,27 @@ Việc ưu tiên các lớp thiểu số dẫn đến sự suy giảm nhẹ về
 
 \subsection{Tối ưu hóa số chiều cho Naive Bayes}
 
-Trong các thí nghiệm trước, ta đã thấy việc giảm chiều bằng PCA giúp cải thiện hiệu suất của Naive Bayes. Tuy nhiên, việc lựa chọn các mốc 256 hay 64 chiều mang tính chất cảm tính. Để khai thác tối đa tiềm năng của mô hình này, một thực nghiệm đã được thực hiện trên không gian số chiều từ 300 đến 500 nhằm tìm ra điểm mà mô hình đạt hiệu suất cao nhất.
+Trong các thí nghiệm trước, ta đã thấy việc giảm chiều bằng PCA giúp cải thiện hiệu suất của Naive Bayes. Tuy nhiên, việc lựa chọn các mốc 256 hay 64 chiều mang tính chất cảm tính. Để khai thác tối đa tiềm năng của mô hình này, một thực nghiệm đã được thực hiện trên không gian số chiều từ 10 đến 760 (Trong báo cáo sẽ chỉ trình bày các kết quả tiêu biểu ở miền 300 đến 500) nhằm tìm ra điểm mà mô hình đạt hiệu suất cao nhất.
 
 Kết quả tìm kiếm trên ba tỉ lệ chia dữ liệu khác nhau được minh họa trong Hình \ref{fig:nb_pca_80_20}, \ref{fig:nb_pca_70_30} và \ref{fig:nb_pca_60_40}.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/opt_dim_nb_82.png} 
-    \caption{Tỉ lệ 80/20: Đỉnh tối ưu tại 430 chiều.}
+    \caption{Mô hình Naive Bayes với tỉ lệ chia Train/Test 80/20.}
     \label{fig:nb_pca_80_20}
 
 \end{figure}
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/opt_dim_nb_73.png} 
-    \caption{Tỉ lệ 70/30: Đỉnh tối ưu tại 450 chiều.}
+    \caption{Mô hình Naive Bayes với tỉ lệ chia Train/Test 70/30.}
     \label{fig:nb_pca_70_30}
 \end{figure}
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/opt_dim_nb_64.png} 
-    \caption{Tỉ lệ 60/40: Đỉnh tối ưu tại 490 chiều.}
+    \caption{Mô hình Naive Bayes với tỉ lệ chia Train/Test 60/40.}
     \label{fig:nb_pca_60_40}
 \end{figure}
 
@@ -503,7 +503,7 @@ Kết quả tìm kiếm trên ba tỉ lệ chia dữ liệu khác nhau được 
     Quan sát biểu đồ, Accuracy và Weighted F1 (đường màu xanh) gần như đi ngang và rất ổn định. Sự biến động chủ yếu nằm ở chỉ số \textbf{F1-Macro}. Điều này khẳng định rằng việc tinh chỉnh số chiều PCA thực chất là quá trình tối ưu hóa khả năng nhận diện các \textit{lớp thiểu số}. Khi chọn đúng số chiều, mô hình "cứu" được các lớp hiếm khỏi bị nhiễu lấn át, trong khi các lớp phổ biến (N, V) đã đủ mạnh để không bị ảnh hưởng.
 
     \item \textbf{Mối quan hệ nghịch đảo giữa lượng dữ liệu và số chiều:}
-    Một xu hướng thú vị được quan sát thấy: \textbf{Dữ liệu càng nhiều, số chiều tối ưu càng giảm}. 
+    Một xu hướng được quan sát thấy là dữ liệu càng nhiều, số chiều tối ưu càng giảm. 
     \begin{itemize}
         \item Khi có nhiều dữ liệu nhất (80/20), mô hình đạt đỉnh sớm nhất tại \textbf{430 chiều}.
         \item Khi dữ liệu ít hơn (60/40), mô hình cần tới \textbf{490 chiều} để đạt đỉnh.
@@ -525,7 +525,7 @@ Mục tiêu của bài toán hồi quy là dự đoán độ tin cậy (xác su�
 Do KNN là thuật toán lười (lazy learning) và nhạy cảm với cấu trúc dữ liệu cục bộ, việc tìm ra tham số $K$ và không gian đặc trưng phù hợp là bước tiên quyết.
 
 \paragraph{1. Ảnh hưởng của Tỉ lệ chia dữ liệu và Số chiều:}
-Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất (Peak $R^2$) đạt được tương ứng với mỗi cấu hình chia dữ liệu và số chiều.
+Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất đạt được tương ứng với mỗi cấu hình chia dữ liệu và số chiều.
 
 \begin{table}[H]
     \centering
@@ -546,7 +546,7 @@ Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất
     }
 \end{table}
 
-\textit{Nhận xét:}
+Nhận thấy từ Bảng \ref{tab:knn_split_dim_summary}:
 \begin{itemize}
     \item \textbf{Tỉ lệ 80/20 mang lại kết quả tốt nhất:} Trên tất cả các số chiều, việc dành 80\% dữ liệu cho huấn luyện luôn cho kết quả $R^2$ cao nhất. Điều này dễ hiểu vì KNN cần mật độ dữ liệu tham chiếu dày đặc để đưa ra dự đoán chính xác cho các điểm mới.
     \item \textbf{Không gian 256 chiều (PCA) tối ưu nhẹ:} Hiệu suất trên 256 chiều ($R^2=0.923$) nhỉnh hơn một chút so với 768 chiều ($R^2=0.922$) và 64 chiều ($R^2=0.919$). PCA ở mức độ vừa phải (256D) giúp loại bỏ nhiễu dư thừa mà không làm mất thông tin quan trọng.
@@ -555,7 +555,7 @@ Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất
 $\Rightarrow$ \textbf{Quyết định:} Chọn tỉ lệ chia \textbf{80/20} làm cơ sở để phân tích chi tiết tham số $K$ và so sánh với MLP.
 
 \paragraph{2. Phân tích chi tiết tham số K (trên tập dữ liệu 80/20):}
-Bảng \ref{tab:knn_k_detail} trình bày chi tiết sự biến thiên của MSE và $R^2$ khi thay đổi $K$ từ 1 đến 9 trên tập dữ liệu tốt nhất (80/20).
+Bảng \ref{tab:knn_k_detail} trình bày chi tiết sự biến thiên của MSE và $R^2$ khi thay đổi $K$ từ 1 đến 9 trên tập dữ liệu (80/20).
 
 \begin{table}[H]
     \centering
@@ -609,7 +609,7 @@ Mô hình MLP được đánh giá trên cùng các kịch bản phân chia đ�
 
 \subsubsection{Thảo luận và So sánh tổng hợp}
 
-Dựa trên kết quả tối ưu của từng mô hình (KNN tại $K=5$, PCA-256D và MLP tại 768D), nghiên cứu rút ra các kết luận quan trọng sau:
+Dựa trên kết quả tối ưu của từng mô hình (KNN tại $K=5$ và MLP), nghiên cứu rút ra các kết luận quan trọng sau:
 
 \paragraph{1. Sự vượt trội của phương pháp Tham số hóa (MLP):}
 So sánh cấu hình tốt nhất của hai mô hình trên cùng tỉ lệ chia 80/20:
@@ -622,7 +622,30 @@ Mô hình MLP giảm sai số MSE xuống hơn \textbf{5 lần} so với KNN. K�
 \paragraph{2. Nghịch lý về chiều dữ liệu (Dimensionality Paradox):}
 \begin{itemize}
     \item Với \textbf{KNN}, giảm chiều bằng PCA (xuống 256D) giúp cải thiện nhẹ hiệu suất ($R^2$ tăng từ 0.922 lên 0.923) do loại bỏ được nhiễu và tác động của lời nguyền số chiều.
-    \item Với \textbf{MLP}, giảm chiều gây hại đáng kể ($R^2$ giảm từ 0.988 xuống 0.936). Mạng nơ-ron hoạt động như một bộ trích xuất đặc trưng tự động; việc nén dữ liệu tuyến tính bằng PCA trước đó đã làm mất đi các thông tin ngữ nghĩa tinh tế (nằm ở các chiều phương sai thấp) mà MLP cần để đạt độ chính xác cực đại.
+    \item Với \textbf{MLP}, giảm chiều gây hại đáng kể ($R^2$ giảm từ 0.988 xuống 0.936). Mạng nơ-ron hoạt động như một bộ trích xuất đặc trưng tự động; việc nén dữ liệu tuyến tính bằng PCA trước đó đã làm mất đi các thông tin ngữ nghĩa (nằm ở các chiều phương sai thấp) mà MLP cần để đạt độ chính xác cực đại.
+\end{itemize}
+
+\paragraph{3. Đánh giá trực quan qua biểu đồ phân tán (Scatter Plot):}
+
+Để minh chứng rõ hơn cho sự vượt trội về độ chính xác giữa hai mô hình, Hình \ref{fig:regression_scatter_comparison} biểu diễn mối tương quan giữa giá trị xác suất thực tế (Ground Truth - Đường màu đen) và giá trị dự đoán (Prediction - Điểm màu xanh) trên tập kiểm thử.
+
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{images/scatter_knn_true_pred.png} 
+        \caption{Biểu đồ phân tán KNN Regression}
+        \label{fig:scatter_knn}
+\end{figure}
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{images/scatter_mlp_true_pred.png} 
+        \caption{Biểu đồ phân tán MLP Regression}
+        \label{fig:scatter_mlp}
+\end{figure}
+
+Quan sát từ biểu đồ cho thấy sự khác biệt về chất lượng dự đoán:
+\begin{itemize}
+    \item \textbf{Mô hình KNN (Hình \ref{fig:scatter_knn}):} Các điểm dự đoán phân tán rộng xung quanh đường thực tế (dải sai số lớn, màu xanh nhạt lan rộng). Đặc biệt ở vùng chuyển tiếp (xác suất $\approx 0.5$), KNN gặp khó khăn lớn trong việc bám sát đường cong sigmoid của dữ liệu gốc, dẫn đến hiện tượng dự đoán bị nhiễu nhiều.
+    \item \textbf{Mô hình MLP (Hình \ref{fig:scatter_mlp}):} Các điểm dự đoán tập trung dày đặc và bám rất sát đường cong thực tế (đường màu đen gần như nằm giữa đám mây điểm). Dải sai số (vùng màu xanh) hẹp hơn đáng kể so với KNN. Điều này xác nhận trực quan rằng MLP đã học được hàm ánh xạ trơn tru và chính xác hơn nhiều, giảm thiểu tối đa các điểm dự đoán ngoại lai.
 \end{itemize}
 
 \paragraph{Kết luận chung:} 
