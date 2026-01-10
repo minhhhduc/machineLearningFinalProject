@@ -531,6 +531,7 @@ Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất
     \centering
     \caption{Tổng hợp hiệu suất tối đa ($R^2$ Score) của KNN trên các kịch bản thực nghiệm khác nhau.}
     \label{tab:knn_split_dim_summary}
+    \resizebox{1\textwidth}{!}{%
     \begin{tabular}{l | ccc}
         \toprule
         \multirow{2}{*}{\textbf{Tỉ lệ Train/Test}} & \multicolumn{3}{c}{\textbf{Hiệu suất tốt nhất ($R^2_{max}$) theo số chiều}} \\
@@ -541,7 +542,8 @@ Bảng \ref{tab:knn_split_dim_summary} tổng hợp kết quả $R^2$ cao nhất
         \textbf{70/30} & 0.917 & 0.918 & 0.915 \\
         \textbf{60/40} & 0.916 & 0.917 & 0.913 \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
 \end{table}
 
 \textit{Nhận xét:}
